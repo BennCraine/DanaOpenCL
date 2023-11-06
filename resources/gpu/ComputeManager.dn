@@ -1,0 +1,7 @@
+uses data.String
+interface ComputeManager {
+    ComputeManager()
+	void findPlatforms()
+    String[] getComputeDevices()
+    int[] getComputeDeviceIDs()
+}
