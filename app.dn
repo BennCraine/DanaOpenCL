@@ -1,0 +1,20 @@
+component provides App requires gpu.ComputeManager, gpu.LogicalComputeDevice, io.Output out {
+
+    int App:main(AppParam params[]) {
+        ComputeManager cm = new ComputeManager()
+        LogicalComputeDevice myDevice = new LogicalComputeDevice(cm)
+        int dims[] = new int[2]
+        dims[0] = 500
+        dims[1] = 500
+        myDevice.createMatrix("M", 0, 2, dims)
+        int values[][] = new int[500][500]
+        for (int i = 0; i < 500; i++) {
+            for (int j = 0; j < 500; j++) {
+                values[i][j] = 10
+            }
+        }
+        myDevice.writeMatrix("M", null, values)
+        return 0
+    }
+
+}

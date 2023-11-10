@@ -7,11 +7,13 @@ interface OpenCLLib {
     int createAsynchQueue(int context)
     int createSynchQueue(int context)
     int createArray(int context, int byteSize)
-    int createMatrix(int context, int byteSize)
+    int createMatrix(int context, int width, int height)
     void destroyMemoryArea(int memObj_cl)
     int createProgram(int context, char source[])
     void writeIntArray(int queue_cl, int memObj_cl, int values[])
     int[] readIntArray(int queue_cl, int memObj_cl, int buf[])
+    void writeIntMatrix(int queue_cl, int memObj_cl, int buf[][])
+    int[][] readIntMatrix(int queue_cl, int memObj_cl, int buf[][])
     int prepareKernel(int clProghandle, int paramHandles[], int paramCount, char program[])
     void runKernel(int clKernel, int queue_cl)
 }
@@ -177,6 +179,9 @@ component provides gpu.ComputeManager, gpu.LogicalComputeDevice requires
         }
 
         void LogicalComputeDevice:createMatrix(char name[], int type, int dim, int lengths[]) {
+            int clMemObj = lib.createMatrix(context_cl, lengths[0], lengths[1])
+            ChandleWrapper handle = new ChandleWrapper(clMemObj)
+            openMemoryAreas.put(name, handle)
             return 
         }
 
@@ -205,6 +210,20 @@ component provides gpu.ComputeManager, gpu.LogicalComputeDevice requires
             buf = lib.readIntArray(clQueue, clMemObj, buf)
 
             return buf
+        }
+
+        void LogicalComputeDevice:writeMatrix(char name[], dec fvalues[][], int ivalues[][]) {
+            ChandleWrapper hand = openMemoryAreas.get(name)
+            int memObj = hand.handle
+
+            ComputeQueue q = writeQueues.get(physicalDevices[0].string)
+            int clQueue = q.queue_cl
+
+            lib.writeIntMatrix(clQueue, memObj, ivalues) 
+        }
+    
+        int[][] LogicalComputeDevice:readMatrix(char name[]) {
+            return null
         }
 
         void LogicalComputeDevice:destroyArray(char name[]) {

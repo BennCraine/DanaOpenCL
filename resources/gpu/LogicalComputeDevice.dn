@@ -35,6 +35,8 @@ interface LogicalComputeDevice {
     void destroyMatrix(char name[])
     void writeArray(char name[], dec fvalues[], int ivalues[])
     int[] readArray(char name[])
+    void writeMatrix(char name[], dec fvalues[][], int ivalues[][])
+    int[][] readMatrix(char name[])
 
     void loadProgram(char path[], char name[])
     String[] getPrograms()
