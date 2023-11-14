@@ -1,19 +1,26 @@
-component provides App requires gpu.ComputeManager, gpu.LogicalComputeDevice, io.Output out {
+component provides App requires gpu.ComputeManager, gpu.LogicalComputeDevice, io.Output out, data.IntUtil iu {
 
     int App:main(AppParam params[]) {
         ComputeManager cm = new ComputeManager()
         LogicalComputeDevice myDevice = new LogicalComputeDevice(cm)
         int dims[] = new int[2]
-        dims[0] = 500
-        dims[1] = 500
+        dims[0] = 7
+        dims[1] = 8
         myDevice.createMatrix("M", 0, 2, dims)
-        int values[][] = new int[500][500]
-        for (int i = 0; i < 500; i++) {
-            for (int j = 0; j < 500; j++) {
+        int values[][] = new int[7][8]
+        for (int i = 0; i < 7; i++) {
+            for (int j = 0; j < 8; j++) {
                 values[i][j] = 10
             }
         }
         myDevice.writeMatrix("M", null, values)
+        int newValues[][] = myDevice.readMatrix("M")
+        for (int i = 0; i < 7; i++) {
+            for (int j = 0; j < 8; j++) {
+                out.print("$(iu.makeString(newValues[i][j]))|")
+            }
+            out.print("\n")
+        }
         return 0
     }
 

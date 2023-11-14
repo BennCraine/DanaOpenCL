@@ -281,8 +281,8 @@ INSTRUCTION_DEF createMatrix(FrameData* cframe) {
     rawParam = api->getParamInt(cframe, 2);
     size_t y_bytes = (size_t) rawParam;
 
-    cl_image_desc desc = {CL_MEM_OBJECT_IMAGE2D, x_bytes, y_bytes, 0, 0, 0, 0, 0, 0, NULL};
-    cl_image_format form = {CL_R, CL_FLOAT};
+    cl_image_desc desc = {CL_MEM_OBJECT_IMAGE2D, x_bytes, y_bytes, 0, 1, 0, 0, 0, 0, NULL};
+    cl_image_format form = {CL_R, CL_UNSIGNED_INT32};
 
     cl_mem newMatrix = clCreateImage(context, CL_MEM_READ_WRITE, &form, &desc, NULL, &CL_err);
 
@@ -304,23 +304,30 @@ INSTRUCTION_DEF writeIntMatrix(FrameData* cframe) {
     cl_mem memObj = (cl_mem) rawParam;
 
     DanaEl* hostMatrix = api->getParamEl(cframe, 2);
-    size_t dim = 2;
+    size_t dim = 2; //only supporting 2d matricies
     size_t* dims = api->getArrayDimensions(hostMatrix, &dim);
+    printf("lens: %lu\n", *dims);
+    printf("lens: %lu\n", *(dims+1));
 
-    uint64_t* rawHostMatrix = (uint64_t*) malloc(sizeof(uint64_t)*dims[0]*dims[1]);
-    uint64_t* rawHostMatrixCpy = rawHostMatrix;
+    uint32_t* rawHostMatrix = (uint32_t*) malloc(sizeof(uint32_t)*dims[0]*dims[1]);
+    uint32_t* rawHostMatrixCpy = rawHostMatrix;
     for (int i = 0; i < dims[0]; i++) {
         for (int j = 0; j < dims[1]; j++) {
-            *rawHostMatrixCpy = api->getArrayCellInt(hostMatrix, (i*dims[0])+j);
+            *rawHostMatrixCpy = api->getArrayCellInt(hostMatrix, (i*dims[1])+j);
+            printf("writing to gpu: %u\n", *rawHostMatrixCpy);
             rawHostMatrixCpy++;
         }
     }
 
     size_t origin[] = {0, 0, 0};
     size_t region[] = {dims[0], dims[1], 1};
-    cl_int CL_err = clEnqueueWriteImage(queue, memObj, CL_TRUE, &origin, &region, 0, 0, rawHostMatrix, 0, NULL, NULL);
+    cl_int CL_err = clEnqueueWriteImage(queue, memObj, CL_TRUE, origin, region, 0, 0, rawHostMatrix, 0, NULL, NULL);
+
     if (CL_err != CL_SUCCESS) {
-        printf("error in write buffer: %d", CL_err);
+        printf("error in write buffer: %d\n", CL_err);
+    }
+    else {
+        printf("write matrix success\n");
     }
     return RETURN_OK;    
 }
@@ -331,22 +338,31 @@ INSTRUCTION_DEF readIntMatrix(FrameData* cframe) {
     rawParam = api->getParamInt(cframe, 1);
     cl_mem memObj = (cl_mem) rawParam;
 
-    DanaEl* hostArray = api->getParamEl(cframe, 2);
-    size_t hostArrayLen = api->getArrayLength(hostArray);
+    DanaEl* hostMatrix = api->getParamEl(cframe, 2);
+    size_t dim = 2;
+    size_t* hostMatrixLens = api->getArrayDimensions(hostMatrix, &dim);
+    printf("lens: %lu\n", *hostMatrixLens);
+    printf("lens: %lu\n", *(hostMatrixLens+1));
 
-    uint64_t* rawHostArray = (uint64_t*) api->getArrayContent(hostArray);
+    uint32_t* rawHostMatrix = (uint32_t*) malloc(sizeof(uint32_t)*hostMatrixLens[0]*hostMatrixLens[1]);
 
-    cl_int CL_err = clEnqueueReadBuffer(queue, memObj, CL_TRUE, 0, hostArrayLen*8, rawHostArray, NULL, NULL, NULL);
-    if (CL_err != CL_SUCCESS) {
-        printf("error in read buffer");
+    size_t origin[] = {0, 0, 0};
+    size_t region[] = {hostMatrixLens[0], hostMatrixLens[1], 1};
+
+    int CL_Err = clEnqueueReadImage(queue, memObj, CL_TRUE, origin, region, 0, 0, rawHostMatrix, 0, NULL, NULL);
+    if (CL_Err != CL_SUCCESS) {
+        printf("error in read matrix: %d\n", CL_Err);
     }
 
-    for (int i = 0; i < hostArrayLen; i++) {
-        api->setArrayCellInt(hostArray, i, *rawHostArray);
-        rawHostArray++;
+    for (int i = 0; i < hostMatrixLens[0]; i++) {
+        for (int j = 0; j < hostMatrixLens[1]; j++) {
+            printf("read from gpu: %u\n", *rawHostMatrix);
+            api->setArrayCellInt(hostMatrix, (i*hostMatrixLens[1])+j, *rawHostMatrix);
+            rawHostMatrix++;
+        }
     }
 
-    api->returnEl(cframe, hostArray);
+    api->returnEl(cframe, hostMatrix);
 
     return RETURN_OK;    
 }
@@ -459,6 +475,8 @@ INSTRUCTION_DEF runKernel(FrameData* cframe) {
     if (CL_err != CL_SUCCESS) {
         printf("error execing kernel");
     }
+
+    return RETURN_OK;
 }
 
 INSTRUCTION_DEF findPlatforms(void) {

@@ -1,3 +1,6 @@
+const int FLOAT = 0
+const int UINT = 1
+
 interface OpenCLLib {
     void init()
 	void findPlatforms()
@@ -20,6 +23,13 @@ interface OpenCLLib {
 
 data ChandleWrapper {
     int handle
+}
+
+data OpenMemArea {
+    ChandleWrapper hand
+    int dims
+    int lengths[]
+    int type
 }
 
 component provides gpu.ComputeManager, gpu.LogicalComputeDevice requires 
@@ -174,24 +184,28 @@ component provides gpu.ComputeManager, gpu.LogicalComputeDevice requires
             //TODO: multiply length by type size in bytes
             int clMemObj = lib.createArray(context_cl, length*8)
             ChandleWrapper handle = new ChandleWrapper(clMemObj)
-            openMemoryAreas.put(name, handle)
+            int lengths[] = new int[1]
+            lengths[0] = length
+            OpenMemArea newMem = new OpenMemArea(handle, 1, lengths, types)
+            openMemoryAreas.put(name, newMem)
             return 
         }
 
         void LogicalComputeDevice:createMatrix(char name[], int type, int dim, int lengths[]) {
             int clMemObj = lib.createMatrix(context_cl, lengths[0], lengths[1])
             ChandleWrapper handle = new ChandleWrapper(clMemObj)
-            openMemoryAreas.put(name, handle)
+            OpenMemArea newMem = new OpenMemArea(handle, dim, lengths, type)
+            openMemoryAreas.put(name, newMem)
             return 
         }
 
         void LogicalComputeDevice:writeArray(char name[], dec fvalues[], int ivalues[]) {
             //get memObj from HashTable
-            ChandleWrapper hand = openMemoryAreas.get(name)
+            OpenMemArea inMem = openMemoryAreas.get(name)
+            ChandleWrapper hand = inMem.hand
             int clMemObj = hand.handle
 
             //check values.len = memObj.len
-
             ComputeQueue q = writeQueues.get(physicalDevices[0].string)
             int clQueue = q.queue_cl
 
@@ -199,13 +213,14 @@ component provides gpu.ComputeManager, gpu.LogicalComputeDevice requires
         }
 
         int[] LogicalComputeDevice:readArray(char name[]) {
-            ChandleWrapper hand = openMemoryAreas.get(name)
+            OpenMemArea inMem = openMemoryAreas.get(name)
+            ChandleWrapper hand = inMem.hand
             int clMemObj = hand.handle
 
             ComputeQueue q = readQueues.get(physicalDevices[0].string)
             int clQueue = q.queue_cl
 
-            int buf[] = new int[10]
+            int buf[] = new int[inMem.lengths[0]]
 
             buf = lib.readIntArray(clQueue, clMemObj, buf)
 
@@ -213,7 +228,8 @@ component provides gpu.ComputeManager, gpu.LogicalComputeDevice requires
         }
 
         void LogicalComputeDevice:writeMatrix(char name[], dec fvalues[][], int ivalues[][]) {
-            ChandleWrapper hand = openMemoryAreas.get(name)
+            OpenMemArea inMem = openMemoryAreas.get(name)
+            ChandleWrapper hand = inMem.hand
             int memObj = hand.handle
 
             ComputeQueue q = writeQueues.get(physicalDevices[0].string)
@@ -223,7 +239,17 @@ component provides gpu.ComputeManager, gpu.LogicalComputeDevice requires
         }
     
         int[][] LogicalComputeDevice:readMatrix(char name[]) {
-            return null
+            OpenMemArea inMem = openMemoryAreas.get(name)
+            ChandleWrapper hand = inMem.hand
+            int memObj = hand.handle
+
+            ComputeQueue q = readQueues.get(physicalDevices[0].string)
+            int clQueue = q.queue_cl
+
+            int buf[][] = new int[inMem.lengths[0]][inMem.lengths[1]]
+
+            buf = lib.readIntMatrix(clQueue, memObj, buf)
+            return buf
         }
 
         void LogicalComputeDevice:destroyArray(char name[]) {

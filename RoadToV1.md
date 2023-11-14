@@ -5,7 +5,7 @@
     - [ ] Change devices linked to Logical Compute Device <br>
 - [ ] Break out the squeduling and management of command queues into seperate Dana Interface. <br>
 - [ ] Add support for Asynch Queues <br>
-- [ ] Add Matrix support <br>
+- [x] Add Matrix support <br>
 - [ ] Add a kernel code pre processor to remove newlines and comments <br>
 - [ ] Make native library OS agnostic <br>
 - [ ] Add a fallback incase OpenCL dependancy not satisfied by users system <br>
