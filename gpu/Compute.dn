@@ -107,7 +107,7 @@ component provides gpu.ComputeManager, gpu.LogicalComputeDevice requires
             context_cl = lib.createContext()
 
             //create queue in native
-            int queue_cl = lib.createSynchQueue(context_cl)
+            int queue_cl = lib.createAsynchQueue(context_cl)
             ComputeQueue firstQueue = new ComputeQueue(queue_cl, new Queue(), physicalDevices[0])
             synchQueues.add(firstQueue)
 

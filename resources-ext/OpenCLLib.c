@@ -173,7 +173,7 @@ INSTRUCTION_DEF createAsynchQueue(FrameData* cframe) {
     cl_int CL_err = CL_SUCCESS;
     u_int64_t rawParam = api->getParamInt(cframe, 0);
     cl_context context = (cl_context) rawParam; 
-    const cl_queue_properties props[] = {CL_QUEUE_PROPERTIES, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, 0};
+    const cl_queue_properties props[] = {CL_QUEUE_PROPERTIES, 0};
     cl_command_queue newQ = clCreateCommandQueueWithProperties(context, *devices, props, &CL_err);
     if(CL_err != CL_SUCCESS) {
         printf("err in asynch creation\n");

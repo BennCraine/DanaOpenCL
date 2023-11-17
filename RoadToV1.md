@@ -4,7 +4,7 @@
 - [ ] Add Multi-device support <br>
     - [ ] Change devices linked to Logical Compute Device <br>
 - [ ] Break out the squeduling and management of command queues into seperate Dana Interface. <br>
-- [ ] Add support for Asynch Queues <br>
+- [x] Add support for Asynch Queues <br>
 - [x] Add Matrix support <br>
 - [ ] Add a kernel code pre processor to remove newlines and comments <br>
 - [ ] Make native library OS agnostic <br>
