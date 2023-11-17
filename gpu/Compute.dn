@@ -265,6 +265,57 @@ component provides gpu.ComputeManager, gpu.LogicalComputeDevice requires
             return
         }
 
+        char[] stripSource(char source[]) {
+            //go char by char, if '\n' then rm
+            // if '//' then rm all till next '\n'
+            // if '/*' then rm all till next '*/'
+            char stripped[] = new char[source.arrayLength]
+            char lastChar = "A"
+            char cur
+            bool inBlockComment = false
+            bool inComment = false
+            bool isNewLine = false
+            bool atStartOfComment = false
+
+            int stripIndex = 0
+            for (int i = 0; i < source.arrayLength; i++) {
+                cur = source[i]
+
+                if (cur == "\n") {
+                    isNewLine = true
+                    inComment = false
+                }
+                if (cur == "/" && lastChar == "/") {
+                    inComment = true
+                    atStartOfComment = true
+                }
+                if (cur == "*" && lastChar == "/") {
+                    inBlockComment = true
+                    atStartOfComment = true
+                }
+                if (cur == "/" && lastChar == "*") {
+                    inBlockComment = false
+                    atStartOfComment = true
+                }
+
+                if (!(inBlockComment || inComment || isNewLine)) {
+                    stripped[stripIndex] = source[i]
+                    stripIndex++
+                }
+
+                if (atStartOfComment) {
+                    stripIndex -= 1
+                }
+
+                isNewLine =  false
+                atStartOfComment = false
+
+                lastChar = cur
+            }
+
+            return stripped
+        }
+
         void LogicalComputeDevice:loadProgram(char path[], char name[]) {
             //TODO: remove comments and all \n chars
             //TODO: build for all devices in this context
@@ -273,8 +324,11 @@ component provides gpu.ComputeManager, gpu.LogicalComputeDevice requires
             char rawSource[]
             while (!source.eof()) {
                 rawSource = new char[](rawSource, source.readLine())
+                rawSource = new char[](rawSource, "\n")
             }
-            out.println(rawSource)
+            out.print(rawSource)
+            rawSource = stripSource(rawSource)
+            out.print(rawSource)
 
             int handle = lib.createProgram(context_cl, rawSource)
             ChandleWrapper hand = new ChandleWrapper(handle)

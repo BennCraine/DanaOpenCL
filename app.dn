@@ -3,6 +3,7 @@ component provides App requires gpu.ComputeManager, gpu.LogicalComputeDevice, io
     int App:main(AppParam params[]) {
         ComputeManager cm = new ComputeManager()
         LogicalComputeDevice myDevice = new LogicalComputeDevice(cm)
+        myDevice.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/vadd2.cl", "test")
         int dims[] = new int[2]
         dims[0] = 7
         dims[1] = 8
