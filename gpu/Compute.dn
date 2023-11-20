@@ -6,13 +6,13 @@ interface OpenCLLib {
 	void findPlatforms()
     int[] getComputeDeviceIDs()
     String[] getComputeDevices()
-    int createContext()
-    int createAsynchQueue(int context)
-    int createSynchQueue(int context)
-    int createArray(int context, int byteSize)
-    int createMatrix(int context, int width, int height)
+    void createContext(int devices[])
+    int createAsynchQueue(int device)
+    int createSynchQueue(int device)
+    int createArray(int device, int byteSize)
+    int createMatrix(int device, int width, int height)
     void destroyMemoryArea(int memObj_cl)
-    int createProgram(int context, char source[])
+    int createProgram(char source[])
     void writeIntArray(int queue_cl, int memObj_cl, int values[])
     int[] readIntArray(int queue_cl, int memObj_cl, int buf[])
     void writeIntMatrix(int queue_cl, int memObj_cl, int buf[][])
@@ -25,8 +25,13 @@ data ChandleWrapper {
     int handle
 }
 
+data ChandleWrapperArray {
+    ChandleWrapper array[]
+}
+
 data OpenMemArea {
     ChandleWrapper hand
+    ChandleWrapper device
     int dims
     int lengths[]
     int type
@@ -63,8 +68,6 @@ component provides gpu.ComputeManager, gpu.LogicalComputeDevice requires
     }
 
     implementation LogicalComputeDevice {
-        int context_cl
-
         String physicalDevices[]
         HashTable physicalDevicesIDs
 
@@ -94,30 +97,33 @@ component provides gpu.ComputeManager, gpu.LogicalComputeDevice requires
             int deviceIDs[] = physicalCompute.getComputeDeviceIDs()
 
             for (int i = 0; i < deviceIDs.arrayLength; i++) {
-                out.println("$(iu.makeString(deviceIDs[i]))")
                 ChandleWrapper hand = new ChandleWrapper(deviceIDs[i])
+                out.println(physicalDevices[i].string)
                 physicalDevicesIDs.put(physicalDevices[i].string, hand) 
                 ChandleWrapper e = physicalDevicesIDs.get(physicalDevices[i].string)
                 int x = e.handle
-                out.println("$(iu.makeString(x))")
-                out.println("--------------------------------")
             }
 
             //create context in native
-            context_cl = lib.createContext()
+            ChandleWrapper e = physicalDevicesIDs.get(physicalDevices[0].string)
+            ChandleWrapper f = physicalDevicesIDs.get(physicalDevices[1].string)
+            int params[] = new int[2]
+            params[0] = e.handle
+            params[1] = f.handle
+            lib.createContext(params)
 
             //create queue in native
-            int queue_cl = lib.createAsynchQueue(context_cl)
+            int queue_cl = lib.createAsynchQueue(e.handle)
             ComputeQueue firstQueue = new ComputeQueue(queue_cl, new Queue(), physicalDevices[0])
             synchQueues.add(firstQueue)
 
             //create read queues, one for each physicalDevice
-            queue_cl = lib.createSynchQueue(context_cl)
+            queue_cl = lib.createSynchQueue(e.handle)
             ComputeQueue readQueue = new ComputeQueue(queue_cl, new Queue(), physicalDevices[0])
             readQueues.put(physicalDevices[0].string, readQueue)
 
             //create write queues, one for each physicalDevice
-            queue_cl = lib.createSynchQueue(context_cl)
+            queue_cl = lib.createSynchQueue(e.handle)
             ComputeQueue writeQueue = new ComputeQueue(queue_cl, new Queue(), physicalDevices[0])
             writeQueues.put(physicalDevices[0].string, writeQueue)
         }
@@ -128,12 +134,14 @@ component provides gpu.ComputeManager, gpu.LogicalComputeDevice requires
 
         void LogicalComputeDevice:addComputeQueue(bool isSynch, String physicalDevice) {
             if(isSynch) {
-                int queue_cl = lib.createSynchQueue(context_cl)
+                //int queue_cl = lib.createSynchQueue()
+                int queue_cl
                 ComputeQueue firstQueue = new ComputeQueue(queue_cl, new Queue(), physicalDevices[0])
                 synchQueues.add(firstQueue)
             }
             else {
-                int queue_cl = lib.createAsynchQueue(context_cl)
+                //int queue_cl = lib.createAsynchQueue(context_cl)
+                int queue_cl
                 ComputeQueue firstQueue = new ComputeQueue(queue_cl, new Queue(), physicalDevices[0])
                 asynchQueues.add(firstQueue)
             }
@@ -182,19 +190,22 @@ component provides gpu.ComputeManager, gpu.LogicalComputeDevice requires
 
         void LogicalComputeDevice:createArray(char name[], int types, int length) {
             //TODO: multiply length by type size in bytes
-            int clMemObj = lib.createArray(context_cl, length*8)
+            ChandleWrapper device = physicalDevicesIDs.get(physicalDevices[0].string)
+            int clMemObj = lib.createArray(device.handle, length*8)
             ChandleWrapper handle = new ChandleWrapper(clMemObj)
             int lengths[] = new int[1]
             lengths[0] = length
-            OpenMemArea newMem = new OpenMemArea(handle, 1, lengths, types)
+            OpenMemArea newMem = new OpenMemArea(handle, device, 1, lengths, types)
             openMemoryAreas.put(name, newMem)
             return 
         }
 
         void LogicalComputeDevice:createMatrix(char name[], int type, int dim, int lengths[]) {
-            int clMemObj = lib.createMatrix(context_cl, lengths[0], lengths[1])
+            //int clMemObj = lib.createMatrix(context_cl, lengths[0], lengths[1])
+            ChandleWrapper device = physicalDevicesIDs.get(physicalDevices[0].string) 
+            int clMemObj = lib.createMatrix(device.handle, lengths[0], lengths[1])
             ChandleWrapper handle = new ChandleWrapper(clMemObj)
-            OpenMemArea newMem = new OpenMemArea(handle, dim, lengths, type)
+            OpenMemArea newMem = new OpenMemArea(handle, device, dim, lengths, type)
             openMemoryAreas.put(name, newMem)
             return 
         }
@@ -330,9 +341,15 @@ component provides gpu.ComputeManager, gpu.LogicalComputeDevice requires
             rawSource = stripSource(rawSource)
             out.print(rawSource)
 
-            int handle = lib.createProgram(context_cl, rawSource)
-            ChandleWrapper hand = new ChandleWrapper(handle)
-            programs.put(name, hand)
+            int handles[] = lib.createProgram(rawSource)
+            ChandleWrapper handlesWrapped[] = new ChandleWrapper[handles.arrayLength]
+            for (int i = 0; i < handles.arrayLength; i++) {
+                ChandleWrapper hand = new ChandleWrapper(handles[i])
+                handlesWrapped[i] = hand
+                ChandleWrapperArray arr = new ChandleWrapperArray()
+                arr.array = handlesWrapped
+                programs.put(name, arr) 
+            }
             
         }
 
@@ -341,8 +358,10 @@ component provides gpu.ComputeManager, gpu.LogicalComputeDevice requires
         }
 
         ComputeCommand LogicalComputeDevice:prepareKernel(char program[], String params[], store List l) {
-            ChandleWrapper hand = programs.get(program)
-            int clProghandle = hand.handle
+            ChandleWrapperArray arr = programs.get(program)
+            ChandleWrapper handles[] = arr.array
+            
+            int clProghandle = handles[0].handle
 
             int paramHandles[] = new int[params.arrayLength]
             for (int i = 0; i < params.arrayLength; i++) {

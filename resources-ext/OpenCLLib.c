@@ -21,7 +21,8 @@
 #include "dana_api_1.7/nli_util.h"
 #include "dana_api_1.7/vmi_util.h"
 
-#define MAX_DEVICES 1
+#define MAX_PLATFORMS 100
+#define MAX_DEVICES 100
 
 static CoreAPI *api;
 
@@ -31,19 +32,31 @@ static GlobalTypeLink* stringArrayGT = NULL;
 static GlobalTypeLink* stringItemGT = NULL;
 static GlobalTypeLink* intMatrixGT = NULL;
 
-cl_platform_id* globalClPlatform;
-cl_device_id* devices;
+cl_platform_id* globalClPlatforms;
+cl_uint numofPlatforms;
+cl_uint* numOfDevicesPerPlatform;
+cl_device_id** devices;
+cl_context* contexts;
 cl_program* programs;
 
-u_int getNumberOfDevices() {
-    u_int numOfDevices = 0;
-    for (int i = 0; i < MAX_DEVICES; i++) {
-        cl_device_id* ittr = devices+i;
-        if (*ittr != NULL) {
-            numOfDevices++;
+typedef struct _device_context_map {
+    cl_device_id device;
+    cl_context context;
+    struct _device_context_map* next;
+} DC_MAP;
+
+DC_MAP* map = NULL;
+DC_MAP* mapEnd = NULL;
+
+cl_context getMapping(cl_device_id id) {
+    printf("getting mapping\n");
+    DC_MAP* probe = map;
+    for (probe; probe->next != NULL; probe = probe->next) {
+        if (probe->device == id) {
+            return probe->context;
         }
     }
-    return numOfDevices;
+    return NULL;
 }
 
 INSTRUCTION_DEF init(void) {
@@ -51,15 +64,57 @@ INSTRUCTION_DEF init(void) {
     cl_int CL_err = CL_SUCCESS;
     cl_uint numPlatforms = 0;
 
-    devices = (cl_device_id*) malloc(sizeof(cl_device_id)*MAX_DEVICES);
-    globalClPlatform = (cl_platform_id*) malloc(sizeof(cl_platform_id));
+    globalClPlatforms = (cl_platform_id*) malloc(sizeof(cl_platform_id)*MAX_PLATFORMS);
     
-    CL_err = clGetPlatformIDs( 1, globalClPlatform, &numPlatforms );
+    CL_err = clGetPlatformIDs( MAX_PLATFORMS, globalClPlatforms, &numPlatforms );
     if (CL_err != CL_SUCCESS) {
         printf("platform id broke in init\n");
     }
+    else {
+        //printf("num of platforms: %u\n", numPlatforms);
+    }
+
+    //printf("available platforms:\n");
+    for (int i = 0; i < numPlatforms; i++) {
+        char* buf = (char*) malloc(sizeof(char)*500);
+        size_t bufReturnSize;
+        CL_err = clGetPlatformInfo(*(globalClPlatforms+i), CL_PLATFORM_NAME, sizeof(char)*500, buf, &bufReturnSize);
+        //printf("%s\n", buf);
+        free(buf);
+    }
+
+    devices = (cl_device_id**) malloc(sizeof(cl_device_id*)*numPlatforms);
+    numOfDevicesPerPlatform = (cl_uint*) malloc(sizeof(cl_uint)*numPlatforms);
     
-    CL_err = clGetDeviceIDs(*globalClPlatform, CL_DEVICE_TYPE_GPU, MAX_DEVICES, devices, NULL);
+    cl_uint returnNumOfDevices = 0;
+    for (int i = 0; i < numPlatforms; i++) {
+        *(devices+i) = (cl_device_id*) malloc(sizeof(cl_device_id)*MAX_DEVICES);
+        CL_err = clGetDeviceIDs(*(globalClPlatforms+i), CL_DEVICE_TYPE_ALL, MAX_DEVICES, *(devices+i), &returnNumOfDevices);
+        if (CL_err != CL_SUCCESS) {
+            printf("error in clGetDeviceIDs: %d\n", CL_err);
+        }
+        //printf("bleh: %p\n", *(devices+i));
+        *(numOfDevicesPerPlatform+i) = returnNumOfDevices;
+    }
+
+    //printf("available devices:\n");
+    for (int i = 0; i < numPlatforms; i++) {
+        for (int j = 0; j < *(numOfDevicesPerPlatform+i); j++) {
+            char* buf = (char*) malloc(sizeof(char)*500);
+            size_t bufReturnSize;
+            CL_err = clGetDeviceInfo(*(*(devices+i)+j), CL_DEVICE_NAME, sizeof(char)*500, buf, &bufReturnSize);
+            if (CL_err != CL_SUCCESS) {
+                printf("error in clGetDeviceInfo: %d\n", CL_err);
+            }
+            for (int k = 0; k < bufReturnSize; k++) {
+                //printf("%c", *(buf+k));
+            }
+            //printf("\n");
+            free(buf);
+        }
+    }
+
+    numofPlatforms = numPlatforms;
 
     return RETURN_OK;
 }
@@ -68,36 +123,32 @@ INSTRUCTION_DEF getComputeDeviceIDs(VFrame* cframe) {
     printf("in getComputeDevicesIDs\n");
     cl_int CL_err = CL_SUCCESS;
 
-    if (devices == NULL) {
-        printf("no devices found");
-        //return empty array
-        DanaEl* newArray = api->makeArray(stringArrayGT, 0, NULL);
-        api->returnEl(cframe, newArray);
-        //exit
-        return RETURN_OK;
+    //go thru each platform
+    int arrSize = 0;
+    for (int i = 0; i < numofPlatforms; i++) {
+        arrSize += *(numOfDevicesPerPlatform+i);
     }
 
-    u_int numOfDevices = getNumberOfDevices();
-
-    printf("devices not null\n");
-    cl_device_id* cpy = devices;
-
-    printf("num of devices: %d\n", numOfDevices);
-
-    if (numOfDevices > 0) {
-        DanaEl* newArray = api->makeArray(intArrayGT, numOfDevices, NULL);
-        cpy = devices;
-        for (size_t i = 0; i < numOfDevices; i++) {
-            api->setArrayCellInt(newArray, i, (size_t) *cpy);
-            cpy++;
+    //grab each device C handle
+    cl_device_id ids[arrSize];
+    int seen = 0;
+    for (int i = 0; i < numofPlatforms; i++) {
+        for (int j = 0; j < *(numOfDevicesPerPlatform+i); j++) {
+            ids[seen+j] = *(*(devices+i)+j);
         }
-        api->returnEl(cframe, newArray);
+        seen += *(numOfDevicesPerPlatform+i);
     }
-    else {
-        printf("no devices found\n");
-        DanaEl* newArray = api->makeArray(intArrayGT, numOfDevices, NULL);
-        api->returnEl(cframe, newArray);
+
+    //arrange in a dana array
+    DanaEl* returnArray = api->makeArray(intArrayGT, arrSize, NULL);
+
+    for (int i = 0; i < arrSize; i++) {
+        api->setArrayCellInt(returnArray, i, (uint64_t) ids[i]);
     }
+
+    //return
+    api->returnEl(cframe, returnArray);
+
     return RETURN_OK;
 }
 
@@ -113,58 +164,106 @@ INSTRUCTION_DEF getComputeDevices(VFrame* cframe) {
         return RETURN_OK;
     }
 
-    u_int numOfDevices = getNumberOfDevices();
+    //go thru each platform
+    int arrSize = 0;
+    for (int i = 0; i < numofPlatforms; i++) {
+        arrSize += *(numOfDevicesPerPlatform+i);
+    }
 
-    printf("devices not null\n");
-    cl_device_id* cpy = devices;
-
-    printf("num of devices: %d\n", numOfDevices);
-
-    if (numOfDevices > 0) {
-        DanaEl* newArray = api->makeArray(stringArrayGT, numOfDevices, NULL);
-
-        cpy = devices;
-        for (size_t i = 0; i < numOfDevices; i++) {
-            char* deviceNameBuf = (char*) malloc(sizeof(char)*200);
-            CL_err = clGetDeviceInfo(*cpy, CL_DEVICE_NAME, sizeof(char)*200, deviceNameBuf, NULL);
-
-            size_t strLen = strlen(deviceNameBuf);
-
-            DanaEl* nextStringInArray = api->makeData(stringItemGT);
-
-            unsigned char* cnt = NULL;
-            DanaEl* itemArray = api->makeArray(charArrayGT, strLen, &cnt);
-
-            memcpy(cnt, deviceNameBuf, strLen);
-
-            api->setDataFieldEl(nextStringInArray, 0, itemArray);
-            api->setArrayCellEl(newArray, i, nextStringInArray);
-
-            cpy++;
+    //grab each device C handle
+    char* deviceNames[arrSize];
+    int seen = 0;
+    for (int i = 0; i < numofPlatforms; i++) {
+        for (int j = 0; j < *(numOfDevicesPerPlatform+i); j++) {
+            char* buf = (char*) malloc(sizeof(char)*500);
+            deviceNames[seen+j] = buf;
+            size_t bufReturnSize;
+            CL_err = clGetDeviceInfo(*(*(devices+i)+j), CL_DEVICE_NAME, sizeof(char)*500, buf, &bufReturnSize);
+            *(deviceNames[seen+j]+bufReturnSize) = '\0';
         }
-        api->returnEl(cframe, newArray);
+        seen += *(numOfDevicesPerPlatform+i);
     }
-    else {
-        printf("no devices found\n");
-        DanaEl* newArray = api->makeArray(stringArrayGT, 0, NULL);
-        api->returnEl(cframe, newArray);
+
+    //arrange in a dana array
+    DanaEl* returnArray = api->makeArray(stringArrayGT, arrSize, NULL);
+
+    for (int i = 0; i < arrSize; i++) {
+        DanaEl* string = api->makeData(stringItemGT);
+
+        size_t sublen = strlen(deviceNames[i]);
+
+        unsigned char* cnt = NULL;
+        DanaEl* charArr = api->makeArray(charArrayGT, sublen, &cnt);
+
+        memcpy(cnt, deviceNames[i], sublen);
+
+        api->setDataFieldEl(string, 0, charArr);
+
+        api->setArrayCellEl(returnArray, i, string);
     }
-    printf("returning from get devices\n");
+
+    //return
+    api->returnEl(cframe, returnArray);
+
     return RETURN_OK;
 }
 
-INSTRUCTION_DEF createContext(VFrame* cframe) {
+INSTRUCTION_DEF createContext(FrameData* cframe) {
     cl_int CL_Err = CL_SUCCESS;
     printf("in context creation\n");
-    const cl_context_properties props[] = {CL_CONTEXT_PLATFORM, *globalClPlatform, 0};
-    cl_context context = clCreateContext(props, 1, devices, NULL, NULL, &CL_Err);
-    if (CL_Err != CL_SUCCESS) {
-        printf("cl not likey\n");
-        printf("code: %d\n", CL_Err);
+    //input: array of device IDs
+    DanaEl* deviceArray = api->getParamEl(cframe, 0);
+    cl_device_id deviceHandles[api->getArrayLength(deviceArray)];
+    for (int i = 0; i < api->getArrayLength(deviceArray); i++) {
+        deviceHandles[i] = (cl_device_id) api->getArrayCellInt(deviceArray, i);
     }
-    printf("from context: %lu\n", (u_int64_t) context);
-    api->returnInt(cframe, (u_int64_t) context);
+    //find all platforms associated with device IDs
+        //find device in devices**
+    
+    contexts = (cl_context*) malloc(sizeof(cl_context)*numofPlatforms);
+    for (int i = 0; i < numofPlatforms; i++) {
+        cl_platform_id platform = *(globalClPlatforms+i);
+        cl_device_id deviceHandlesForThisPlat[50];
+        int deviceForPlatCount = 0;
 
+        for (int j = 0; j < *(numOfDevicesPerPlatform+i); j++) {
+            for (int k = 0; k < api->getArrayLength(deviceArray); k++) {
+                if (deviceHandles[k] == *(*(devices+i)+j)) {
+                    deviceHandlesForThisPlat[deviceForPlatCount] = deviceHandles[k];
+                    deviceForPlatCount++;
+                }
+            }
+        }
+
+        cl_device_id deviceHandlesForThisPlatCut[deviceForPlatCount];
+        for(int i = 0; i < deviceForPlatCount; i++) {
+            deviceHandlesForThisPlatCut[i] = deviceHandlesForThisPlat[i];
+        }
+
+        const cl_context_properties props[] = {CL_CONTEXT_PLATFORM, platform, 0};
+        //printf("num of devices in this context: %u\n",deviceForPlatCount);
+        //printf("device id: %lu\n", deviceHandlesForThisPlatCut[0]);
+        cl_context context = clCreateContext(props, deviceForPlatCount, deviceHandlesForThisPlatCut, NULL, NULL, &CL_Err);
+        contexts[i] = context;
+        if (CL_Err != CL_SUCCESS) {
+            printf("cl not likey\n");
+            printf("code: %d\n", CL_Err);
+        }
+
+        for (int i = 0; i < deviceForPlatCount; i++) {
+            DC_MAP* newMapping = (DC_MAP*) malloc(sizeof(DC_MAP));
+            newMapping->device = deviceHandlesForThisPlatCut[i];
+            newMapping->context = context;
+            if (map == NULL) {
+                map = newMapping;
+                mapEnd = newMapping;
+            }
+            else {
+                mapEnd->next = newMapping;
+                mapEnd = newMapping;
+            }
+        }
+    }
     return RETURN_OK;
 }
 
@@ -172,12 +271,16 @@ INSTRUCTION_DEF createAsynchQueue(FrameData* cframe) {
     printf("in create asynch\n");
     cl_int CL_err = CL_SUCCESS;
     u_int64_t rawParam = api->getParamInt(cframe, 0);
-    cl_context context = (cl_context) rawParam; 
+
+    cl_device_id device = (cl_device_id) rawParam; 
+    cl_context context = getMapping(device);
+
     const cl_queue_properties props[] = {CL_QUEUE_PROPERTIES, 0};
-    cl_command_queue newQ = clCreateCommandQueueWithProperties(context, *devices, props, &CL_err);
+    cl_command_queue newQ = clCreateCommandQueueWithProperties(context, device, NULL, &CL_err);
     if(CL_err != CL_SUCCESS) {
-        printf("err in asynch creation\n");
+        printf("err in asynch creation: %d\n", CL_err);
     }
+
     printf("from q creation: %lu\n", (uint64_t) newQ);
     api->returnInt(cframe, (uint64_t) newQ);
     return RETURN_OK;
@@ -187,12 +290,16 @@ INSTRUCTION_DEF createSynchQueue(FrameData* cframe) {
     printf("in create synch\n");
     cl_int CL_err = CL_SUCCESS;
     u_int64_t rawParam = api->getParamInt(cframe, 0);
-    cl_context context = (cl_context) rawParam; 
+
+    cl_device_id device = (cl_device_id) rawParam; 
+    cl_context context = getMapping(device);
+
     const cl_queue_properties props[] = {CL_QUEUE_PROPERTIES, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, 0};
-    cl_command_queue newQ = clCreateCommandQueueWithProperties(context, *devices, props, &CL_err);
+    cl_command_queue newQ = clCreateCommandQueueWithProperties(context, device, props, &CL_err);
     if(CL_err != CL_SUCCESS) {
-        printf("err in asynch creation\n");
+        printf("err in asynch creation: %d\n", CL_err);
     }
+
     printf("from q creation: %lu\n", (uint64_t) newQ);
     api->returnInt(cframe, (uint64_t) newQ);
     return RETURN_OK;
@@ -202,7 +309,7 @@ INSTRUCTION_DEF createArray(FrameData* cframe) {
     printf("in create array\n");
     cl_int CL_err = CL_SUCCESS;
     u_int64_t rawParam = api->getParamInt(cframe, 0);
-    cl_context context = (cl_context) rawParam; 
+    cl_context context = getMapping((cl_device_id) rawParam);
 
     rawParam = api->getParamInt(cframe, 1);
     size_t bytes = (size_t) rawParam;
@@ -273,7 +380,7 @@ INSTRUCTION_DEF createMatrix(FrameData* cframe) {
     printf("in create matrix\n");
     cl_int CL_err = CL_SUCCESS;
     u_int64_t rawParam = api->getParamInt(cframe, 0);
-    cl_context context = (cl_context) rawParam; 
+    cl_context context = getMapping((cl_device_id) rawParam); 
 
     rawParam = api->getParamInt(cframe, 1);
     size_t x_bytes = (size_t) rawParam;
@@ -388,27 +495,26 @@ INSTRUCTION_DEF createProgram(FrameData* cframe) {
     cl_program prog;
     cl_int CL_err = CL_SUCCESS;
 
-    uint64_t rawParam = api->getParamInt(cframe, 0);
-    cl_context context = (cl_context) rawParam;
-
     char** programStrings = (char**) malloc(sizeof(char*));
-    char* programSource = x_getParam_char_array(api, cframe, 1);
+    char* programSource = x_getParam_char_array(api, cframe, 0);
     *programStrings = programSource;
 
-    prog = clCreateProgramWithSource(context, 1, (const char**) programStrings, NULL, &CL_err);
-    if (CL_err != CL_SUCCESS) {
-        printf("err when creating program: %d\n", CL_err);
-    }
+    for (int i = 0; i < numofPlatforms; i++) {
+        prog = clCreateProgramWithSource(*(contexts+i), 1, (const char**) programStrings, NULL, &CL_err);
+        if (CL_err != CL_SUCCESS) {
+            printf("err when creating program: %d\n", CL_err);
+        }
 
-    CL_err = CL_SUCCESS;
-    cl_device_id* deviceList = (cl_device_id*) malloc(sizeof(cl_device_id));
-    *deviceList = *devices;
-    CL_err = clBuildProgram(prog, 1, deviceList, NULL, NULL, NULL);
-    if (CL_err != CL_SUCCESS) {
-        size_t len;
-        char buf[2048];
-        clGetProgramBuildInfo(prog, *deviceList, CL_PROGRAM_BUILD_LOG, sizeof(buf), buf, &len);
-        printf("%s\n",buf);
+        CL_err = CL_SUCCESS;
+        CL_err = clBuildProgram(prog, *(numOfDevicesPerPlatform+i), *(devices+i), NULL, NULL, NULL);
+        if (CL_err != CL_SUCCESS) {
+            size_t len;
+            char buf[2048];
+            /*
+            clGetProgramBuildInfo(prog, *(devices+i), CL_PROGRAM_BUILD_LOG, sizeof(buf), buf, &len);
+            printf("%s\n",buf);
+            */
+        }
     }
 
     api->returnInt(cframe, (uint64_t) prog);

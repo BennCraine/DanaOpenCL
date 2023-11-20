@@ -78,7 +78,7 @@ static const DanaTypeField function_OpenCLLib_getComputeDeviceIDs_fields[] = {
 static const DanaTypeField function_OpenCLLib_getComputeDevices_fields[] = {
 {(DanaType*) &String_array_def, NULL, 0, 0, 0}};
 static const DanaTypeField function_OpenCLLib_createContext_fields[] = {
-{(DanaType*) &int_def, NULL, 0, 0, 0}};
+{(DanaType*) &void_def, NULL, 0, 0, 0},{(DanaType*) &int_array_def, NULL, 0, 0, 0}};
 static const DanaTypeField function_OpenCLLib_createAsynchQueue_fields[] = {
 {(DanaType*) &int_def, NULL, 0, 0, 0},{(DanaType*) &int_def, NULL, 0, 0, 8}};
 static const DanaTypeField function_OpenCLLib_createSynchQueue_fields[] = {
@@ -93,8 +93,7 @@ static const DanaTypeField function_OpenCLLib_createMatrix_fields[] = {
 static const DanaTypeField function_OpenCLLib_destroyMemoryArea_fields[] = {
 {(DanaType*) &void_def, NULL, 0, 0, 0},{(DanaType*) &int_def, NULL, 0, 0, 0}};
 static const DanaTypeField function_OpenCLLib_createProgram_fields[] = {
-{(DanaType*) &int_def, NULL, 0, 0, 0},{(DanaType*) &int_def, NULL, 0, 0, 8},
-{(DanaType*) &char_array_def, NULL, 0, 0, 16}};
+{(DanaType*) &int_def, NULL, 0, 0, 0},{(DanaType*) &char_array_def, NULL, 0, 0, 8}};
 static const DanaTypeField function_OpenCLLib_writeIntArray_fields[] = {
 {(DanaType*) &void_def, NULL, 0, 0, 0},{(DanaType*) &int_def, NULL, 0, 0, 0},
 {(DanaType*) &int_def, NULL, 0, 0, 8},
@@ -128,13 +127,13 @@ static const DanaType object_OpenCLLib_functions_spec[] = {
 {TYPE_FUNCTION, 0, 0, (DanaTypeField*) &function_OpenCLLib_findPlatforms_fields, 1},
 {TYPE_FUNCTION, 0, 16, (DanaTypeField*) &function_OpenCLLib_getComputeDeviceIDs_fields, 1},
 {TYPE_FUNCTION, 0, 16, (DanaTypeField*) &function_OpenCLLib_getComputeDevices_fields, 1},
-{TYPE_FUNCTION, 0, 8, (DanaTypeField*) &function_OpenCLLib_createContext_fields, 1},
+{TYPE_FUNCTION, 0, 16, (DanaTypeField*) &function_OpenCLLib_createContext_fields, 2},
 {TYPE_FUNCTION, 0, 16, (DanaTypeField*) &function_OpenCLLib_createAsynchQueue_fields, 2},
 {TYPE_FUNCTION, 0, 16, (DanaTypeField*) &function_OpenCLLib_createSynchQueue_fields, 2},
 {TYPE_FUNCTION, 0, 24, (DanaTypeField*) &function_OpenCLLib_createArray_fields, 3},
 {TYPE_FUNCTION, 0, 32, (DanaTypeField*) &function_OpenCLLib_createMatrix_fields, 4},
 {TYPE_FUNCTION, 0, 8, (DanaTypeField*) &function_OpenCLLib_destroyMemoryArea_fields, 2},
-{TYPE_FUNCTION, 0, 32, (DanaTypeField*) &function_OpenCLLib_createProgram_fields, 3},
+{TYPE_FUNCTION, 0, 24, (DanaTypeField*) &function_OpenCLLib_createProgram_fields, 2},
 {TYPE_FUNCTION, 0, 32, (DanaTypeField*) &function_OpenCLLib_writeIntArray_fields, 4},
 {TYPE_FUNCTION, 0, 48, (DanaTypeField*) &function_OpenCLLib_readIntArray_fields, 4},
 {TYPE_FUNCTION, 0, 32, (DanaTypeField*) &function_OpenCLLib_writeIntMatrix_fields, 4},
@@ -265,8 +264,8 @@ Interface* getPublicInterface(){
 ((VFrameHeader*) op_getComputeDevices_thread_spec) -> sub = NULL;
 ((VFrameHeader*) op_getComputeDevices_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[7];
 ((VFrameHeader*) op_getComputeDevices_thread_spec) -> functionName = "getComputeDevices";
-((VFrameHeader*) op_createContext_thread_spec) -> frameSize = sizeof(VFrame) + sizeof(VVarR) + 8;
-((VFrameHeader*) op_createContext_thread_spec) -> formalParamsCount = 0;
+((VFrameHeader*) op_createContext_thread_spec) -> frameSize = sizeof(VFrame) + sizeof(VVarR) + 16;
+((VFrameHeader*) op_createContext_thread_spec) -> formalParamsCount = 1;
 ((VFrameHeader*) op_createContext_thread_spec) -> sub = NULL;
 ((VFrameHeader*) op_createContext_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[8];
 ((VFrameHeader*) op_createContext_thread_spec) -> functionName = "createContext";
@@ -295,8 +294,8 @@ Interface* getPublicInterface(){
 ((VFrameHeader*) op_destroyMemoryArea_thread_spec) -> sub = NULL;
 ((VFrameHeader*) op_destroyMemoryArea_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[13];
 ((VFrameHeader*) op_destroyMemoryArea_thread_spec) -> functionName = "destroyMemoryArea";
-((VFrameHeader*) op_createProgram_thread_spec) -> frameSize = sizeof(VFrame) + sizeof(VVarR) + 32;
-((VFrameHeader*) op_createProgram_thread_spec) -> formalParamsCount = 2;
+((VFrameHeader*) op_createProgram_thread_spec) -> frameSize = sizeof(VFrame) + sizeof(VVarR) + 24;
+((VFrameHeader*) op_createProgram_thread_spec) -> formalParamsCount = 1;
 ((VFrameHeader*) op_createProgram_thread_spec) -> sub = NULL;
 ((VFrameHeader*) op_createProgram_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[14];
 ((VFrameHeader*) op_createProgram_thread_spec) -> functionName = "createProgram";
