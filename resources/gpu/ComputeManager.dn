@@ -1,6 +1,9 @@
 uses data.String
+uses gpu.Compute
+
 interface ComputeManager {
-    ComputeManager()
+    ComputeManager ComputeManager(store Compute nativeCompute)
+    Compute getNative()
 	void findPlatforms()
     String[] getComputeDevices()
     int[] getComputeDeviceIDs()

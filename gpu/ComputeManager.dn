@@ -1,0 +1,29 @@
+component provides gpu.ComputeManager requires gpu.Compute {
+    Compute lib
+    ComputeManager:ComputeManager(store Compute nativeCompute) {
+        lib = nativeCompute
+        lib.init_w()
+    }
+
+    Compute ComputeManager:getNative() {
+        return lib
+    }
+
+    void ComputeManager:findPlatforms() {
+        lib.findPlatforms_w()
+    }
+
+    String[] ComputeManager:getComputeDevices() {
+        String devices[] = lib.getComputeDevices_w()
+        return devices
+    }
+
+    int[] ComputeManager:getComputeDeviceIDs() {
+        int ids[] = lib.getComputeDeviceIDs_w()
+        return ids
+    }
+
+    void ComputeManager:plugInDevice(int deviceID) {}
+
+    void ComputeManager:unplugDevice(int deviceID) {}
+}

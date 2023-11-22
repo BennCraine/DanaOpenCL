@@ -52,10 +52,17 @@ cl_context getMapping(cl_device_id id) {
     printf("getting mapping\n");
     DC_MAP* probe = map;
     for (probe; probe->next != NULL; probe = probe->next) {
+        printf("%lu:%lu\n", probe->device, id);
         if (probe->device == id) {
+            
             return probe->context;
         }
     }
+    if (probe->device == id) {
+        printf("%lu:%lu\n", probe->device, id);
+        return probe->context;
+    }
+
     return NULL;
 }
 
@@ -211,6 +218,7 @@ INSTRUCTION_DEF getComputeDevices(VFrame* cframe) {
 INSTRUCTION_DEF createContext(FrameData* cframe) {
     cl_int CL_Err = CL_SUCCESS;
     printf("in context creation\n");
+    printf("%u\n", numofPlatforms);
     //input: array of device IDs
     DanaEl* deviceArray = api->getParamEl(cframe, 0);
     cl_device_id deviceHandles[api->getArrayLength(deviceArray)];
@@ -226,18 +234,33 @@ INSTRUCTION_DEF createContext(FrameData* cframe) {
         cl_device_id deviceHandlesForThisPlat[50];
         int deviceForPlatCount = 0;
 
+        /*
         for (int j = 0; j < *(numOfDevicesPerPlatform+i); j++) {
             for (int k = 0; k < api->getArrayLength(deviceArray); k++) {
+                printf("K: %d\n", k);
                 if (deviceHandles[k] == *(*(devices+i)+j)) {
                     deviceHandlesForThisPlat[deviceForPlatCount] = deviceHandles[k];
                     deviceForPlatCount++;
                 }
             }
         }
+        */
 
+        for (int j = 0; j < *(numOfDevicesPerPlatform+i); j++) {
+            for (int k = 0; k < api->getArrayLength(deviceArray); k++) {
+                printf("K: %d\n", k);
+                if (deviceHandles[k] == *(*(devices+i)+j)) {
+                    deviceHandlesForThisPlat[deviceForPlatCount] = deviceHandles[k];
+                    printf("device: %lu\n", deviceHandles[k]);
+                    deviceForPlatCount++;
+                }
+            }
+        }
+
+        printf("dev for this plat count %d\n", deviceForPlatCount);
         cl_device_id deviceHandlesForThisPlatCut[deviceForPlatCount];
-        for(int i = 0; i < deviceForPlatCount; i++) {
-            deviceHandlesForThisPlatCut[i] = deviceHandlesForThisPlat[i];
+        for(int j = 0; j < deviceForPlatCount; j++) {
+            deviceHandlesForThisPlatCut[j] = deviceHandlesForThisPlat[j];
         }
 
         const cl_context_properties props[] = {CL_CONTEXT_PLATFORM, platform, 0};
@@ -250,15 +273,19 @@ INSTRUCTION_DEF createContext(FrameData* cframe) {
             printf("code: %d\n", CL_Err);
         }
 
-        for (int i = 0; i < deviceForPlatCount; i++) {
+        for (int j = 0; j < deviceForPlatCount; j++) {
             DC_MAP* newMapping = (DC_MAP*) malloc(sizeof(DC_MAP));
-            newMapping->device = deviceHandlesForThisPlatCut[i];
+            newMapping->device = deviceHandlesForThisPlatCut[j];
+            printf("device going into mapping %lu\n", newMapping->device);
             newMapping->context = context;
+            newMapping->next = NULL;
             if (map == NULL) {
+                printf("first condition true\n");
                 map = newMapping;
                 mapEnd = newMapping;
             }
             else {
+                printf("second condition true\n");
                 mapEnd->next = newMapping;
                 mapEnd = newMapping;
             }
@@ -293,6 +320,7 @@ INSTRUCTION_DEF createSynchQueue(FrameData* cframe) {
 
     cl_device_id device = (cl_device_id) rawParam; 
     cl_context context = getMapping(device);
+    printf("%lu\n", (uint64_t) context);
 
     const cl_queue_properties props[] = {CL_QUEUE_PROPERTIES, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, 0};
     cl_command_queue newQ = clCreateCommandQueueWithProperties(context, device, props, &CL_err);

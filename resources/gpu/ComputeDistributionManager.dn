@@ -18,9 +18,9 @@ data ChandleWrapperArray {
 }
 
 interface ComputeDistributionManager {
-    ComputeDistributionManager(store ComputeManager physicalCompute)
+    ComputeDistributionManager(store ComputeManager physicalCompute, store Compute nativeCompute)
 
-    HashTable[] getReadWriteQueues(store HashTable readQ, store HashTable writeQueue)
+    HashTableItem[] getReadWriteQueues(store HashTable rw[])
 
     HashTableItem mallocWhichDevice()
     void execProgram(ChandleWrapperArray kernelHandles, HashTable memoryObjects)

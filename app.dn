@@ -1,8 +1,7 @@
-component provides App requires gpu.ComputeManager, gpu.LogicalComputeDevice, io.Output out, data.IntUtil iu {
+component provides App requires gpu.LogicalComputeDevice, data.adt.List, io.Output out, data.IntUtil iu {
 
     int App:main(AppParam params[]) {
-        ComputeManager cm = new ComputeManager()
-        LogicalComputeDevice myDevice = new LogicalComputeDevice(cm)
+        LogicalComputeDevice myDevice = new LogicalComputeDevice()
         myDevice.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/vadd2.cl", "test")
         int dims[] = new int[2]
         dims[0] = 7

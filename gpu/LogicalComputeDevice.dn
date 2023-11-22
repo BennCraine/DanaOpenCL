@@ -1,0 +1,267 @@
+component provides LogicalComputeDevice requires gpu.Compute,
+                                                gpu.ComputeDistributionManager,
+                                                gpu.ComputeManager,
+                                                data.adt.List,
+                                                data.adt.HashTable,
+                                                data.adt.Queue,
+                                                io.Output out,
+                                                io.TextFile,
+                                                data.IntUtil iu
+                                                {
+
+    ComputeDistributionManager distManager
+    Compute nat
+
+    HashTable readQueues
+    HashTable writeQueues
+
+    HashTable openMemoryAreas
+    
+    HashTable programs
+
+    LogicalComputeDevice:LogicalComputeDevice() {
+        nat = new Compute()
+        ComputeManager cm = new ComputeManager(nat)
+        distManager = new ComputeDistributionManager(cm, nat)
+
+        readQueues = new HashTable()
+        writeQueues = new HashTable()
+
+        openMemoryAreas = new HashTable()
+
+        programs = new HashTable()
+
+        HashTableItem rw[] = rclone distManager.getReadWriteQueues(new HashTable[2])
+        for (int i = 0; i < rw.arrayLength; i++) {
+            HashTableItem nextItem = rw[i]
+            ChandleWrapper x = nextItem.value
+            out.println("---DANA---")
+            out.println("$(nextItem.key)")
+            out.println("$(iu.makeString(x.handle))")
+            out.println("---DANA---")
+
+            int queue_cl = nat.createSynchQueue_w(x.handle)
+            ComputeQueue readQueue = new ComputeQueue(queue_cl, new Queue(), new String(nextItem.key))
+            readQueues.put(nextItem.key, readQueue)
+            
+            queue_cl = nat.createSynchQueue_w(x.handle)
+            readQueue = new ComputeQueue(queue_cl, new Queue(), new String(nextItem.key))
+            writeQueues.put(nextItem.key, readQueue)
+        }
+    }
+
+
+    void LogicalComputeDevice:createArray(char name[], int types, int length) {
+        HashTableItem device = distManager.mallocWhichDevice()
+        ChandleWrapper deviceHandle = device.value
+        char deviceName[] = device.key
+        int clMemObj = nat.createArray_w(deviceHandle.handle, length*8)
+        ChandleWrapper arrayHandle = new ChandleWrapper(clMemObj)
+        int lengths[] = new int[1]
+        lengths[0] = length
+        OpenMemArea newMem = new OpenMemArea(arrayHandle, new String(deviceName), 1, lengths, types)
+        openMemoryAreas.put(name, newMem)
+        return 
+    }
+
+    void LogicalComputeDevice:createMatrix(char name[], int type, int dim, int lengths[]) {
+        HashTableItem device = distManager.mallocWhichDevice()
+        ChandleWrapper deviceHandle = device.value
+        char deviceName[] = device.key
+        int clMemObj = nat.createMatrix_w(deviceHandle.handle, lengths[0], lengths[1])
+        ChandleWrapper matrixHandle = new ChandleWrapper(clMemObj)
+        OpenMemArea newMem = new OpenMemArea(matrixHandle, new String(deviceName), dim, lengths, type)
+        openMemoryAreas.put(name, newMem)
+        return 
+    }
+
+    void LogicalComputeDevice:writeArray(char name[], dec fvalues[], int ivalues[]) {
+        //get memObj from HashTable
+        OpenMemArea inMem = openMemoryAreas.get(name)
+
+        ChandleWrapper hand = inMem.hand
+        int clMemObj = hand.handle
+
+        String device = inMem.device
+
+        //check values.len = memObj.len
+        ComputeQueue q = writeQueues.get(device.string)
+        int clQueue = q.queue_cl
+
+        nat.writeIntArray_w(clQueue, clMemObj, ivalues) 
+    }
+
+    int[] LogicalComputeDevice:readArray(char name[]) {
+        OpenMemArea inMem = openMemoryAreas.get(name)
+        ChandleWrapper hand = inMem.hand
+        int clMemObj = hand.handle
+
+        String device = inMem.device
+
+        ComputeQueue q = readQueues.get(device.string)
+        int clQueue = q.queue_cl
+
+        int buf[] = new int[inMem.lengths[0]]
+
+        buf = nat.readIntArray_w(clQueue, clMemObj, buf)
+
+        return buf
+    }
+
+    void LogicalComputeDevice:writeMatrix(char name[], dec fvalues[][], int ivalues[][]) {
+        OpenMemArea inMem = openMemoryAreas.get(name)
+        ChandleWrapper hand = inMem.hand
+        int memObj = hand.handle
+
+        String device = inMem.device
+
+        ComputeQueue q = writeQueues.get(device.string)
+        int clQueue = q.queue_cl
+
+        nat.writeIntMatrix_w(clQueue, memObj, ivalues) 
+    }
+
+    int[][] LogicalComputeDevice:readMatrix(char name[]) {
+        OpenMemArea inMem = openMemoryAreas.get(name)
+        ChandleWrapper hand = inMem.hand
+        int memObj = hand.handle
+
+        String device = inMem.device
+
+        ComputeQueue q = readQueues.get(device.string)
+        int clQueue = q.queue_cl
+
+        int buf[][] = new int[inMem.lengths[0]][inMem.lengths[1]]
+
+        buf = nat.readIntMatrix_w(clQueue, memObj, buf)
+        return buf
+    }
+
+    void LogicalComputeDevice:destroyArray(char name[]) {
+        OpenMemArea inMem = openMemoryAreas.get(name)
+        ChandleWrapper handle = inMem.hand
+        if(handle != null) {
+            nat.destroyMemoryArea_w(handle.handle)
+        }
+        openMemoryAreas.delete(name)
+        return
+    }
+
+    void LogicalComputeDevice:destroyMatrix(char name[]) {
+        OpenMemArea inMem = openMemoryAreas.get(name)
+        ChandleWrapper handle = inMem.hand
+        if(handle != null) {
+            nat.destroyMemoryArea_w(handle.handle)
+        }
+        openMemoryAreas.delete(name)
+        return
+    }
+
+    char[] stripSource(char source[]) {
+        //go char by char, if '\n' then rm
+        // if '//' then rm all till next '\n'
+        // if '/*' then rm all till next '*/'
+        char stripped[] = new char[source.arrayLength]
+        char lastChar = "A"
+        char cur
+        bool inBlockComment = false
+        bool inComment = false
+        bool isNewLine = false
+        bool atStartOfComment = false
+
+        int stripIndex = 0
+        for (int i = 0; i < source.arrayLength; i++) {
+            cur = source[i]
+
+            if (cur == "\n") {
+                isNewLine = true
+                inComment = false
+            }
+            if (cur == "/" && lastChar == "/") {
+                inComment = true
+                atStartOfComment = true
+            }
+            if (cur == "*" && lastChar == "/") {
+                inBlockComment = true
+                atStartOfComment = true
+            }
+            if (cur == "/" && lastChar == "*") {
+                inBlockComment = false
+                atStartOfComment = true
+            }
+
+            if (!(inBlockComment || inComment || isNewLine)) {
+                stripped[stripIndex] = source[i]
+                stripIndex++
+            }
+
+            if (atStartOfComment) {
+                stripIndex -= 1
+            }
+
+            isNewLine =  false
+            atStartOfComment = false
+
+            lastChar = cur
+        }
+
+        return stripped
+    }
+
+    void LogicalComputeDevice:loadProgram(char path[], char name[]) {
+        //TODO: remove comments and all \n chars
+        //TODO: build for all devices in this context
+        TextFile source = new TextFile(path, File.READ)
+        int sizeInBytes = source.getSize()
+        char rawSource[]
+        while (!source.eof()) {
+            rawSource = new char[](rawSource, source.readLine())
+            rawSource = new char[](rawSource, "\n")
+        }
+        rawSource = stripSource(rawSource)
+
+        int handles[] = nat.createProgram_w(rawSource)
+        ChandleWrapper handlesWrapped[] = new ChandleWrapper[handles.arrayLength]
+        for (int i = 0; i < handles.arrayLength; i++) {
+            ChandleWrapper hand = new ChandleWrapper(handles[i])
+            handlesWrapped[i] = hand
+            ChandleWrapperArray arr = new ChandleWrapperArray()
+            arr.array = handlesWrapped
+            programs.put(name, arr) 
+        }
+        
+    }
+
+    String[] LogicalComputeDevice:getPrograms() {
+        return null
+    }
+
+    void LogicalComputeDevice:runProgram(char program[], String params[], store List l) {
+        ChandleWrapperArray arr = programs.get(program)
+        ChandleWrapper handles[] = arr.array
+
+        HashTable paramMap = new HashTable()
+        
+        int paramHandles[] = new int[params.arrayLength]
+        for (int i = 0; i < params.arrayLength; i++) {
+            OpenMemArea x = openMemoryAreas.get(params[i].string)
+            ChandleWrapper memHandle = x.hand
+            paramHandles[i] = memHandle.handle
+        }
+
+        int paramCount = params.arrayLength
+        //choose which program handle to use or prepareKernel for all?
+        ChandleWrapper kernelHandles[] = new ChandleWrapper[handles.arrayLength]
+        for (int k = 0; k < handles.arrayLength; k++) {
+            int clProghandle = handles[k].handle
+            int kernelHandle = nat.prepareKernel_w(clProghandle, paramHandles, paramCount, program)
+            kernelHandles[k] = new ChandleWrapper(kernelHandle)
+        }
+        ChandleWrapperArray kerArr = new ChandleWrapperArray(kernelHandles)
+
+        //hand kernels over to distManager with a map describing which params are on which devices
+        distManager.execProgram(kerArr, paramMap)
+
+        return
+    }
+}

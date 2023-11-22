@@ -1,0 +1,37 @@
+uses data.String
+
+data ChandleWrapper {
+    int handle
+}
+
+data ChandleWrapperArray {
+    ChandleWrapper array[]
+}
+
+data OpenMemArea {
+    ChandleWrapper hand
+    String device
+    int dims
+    int lengths[]
+    int type
+}
+
+interface Compute {
+    void init_w()
+	void findPlatforms_w()
+    int[] getComputeDeviceIDs_w()
+    String[] getComputeDevices_w()
+    void createContext_w(int devices[])
+    int createAsynchQueue_w(int device)
+    int createSynchQueue_w(int device)
+    int createArray_w(int device, int byteSize)
+    int createMatrix_w(int device, int width, int height)
+    void destroyMemoryArea_w(int memObj_cl)
+    int createProgram_w(char source[])
+    void writeIntArray_w(int queue_cl, int memObj_cl, int values[])
+    int[] readIntArray_w(int queue_cl, int memObj_cl, int buf[])
+    void writeIntMatrix_w(int queue_cl, int memObj_cl, int buf[][])
+    int[][] readIntMatrix_w(int queue_cl, int memObj_cl, int buf[][])
+    int prepareKernel_w(int clProghandle, int paramHandles[], int paramCount, char program[])
+    void runKernel_w(int clKernel, int queue_cl)
+}

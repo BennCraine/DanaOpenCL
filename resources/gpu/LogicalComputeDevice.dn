@@ -5,23 +5,10 @@ uses data.String
 uses data.adt.Queue
 uses data.adt.List
 
-uses ComputeManager
-
-data ComputeQueue {
-    int queue_cl
-    Queue q
-    String physicalDevice
-}
-
-data ComputeCommand {
-    int commandCode
-    List params
-}
-
 const int RUN_KERNEL = 1
 
 interface LogicalComputeDevice {
-    LogicalComputeDevice(ComputeManager physicalCompute)
+    LogicalComputeDevice()
 
     void createArray(char name[], int types, int length)
     void createMatrix(char name[], int type, int dim, int lengths[])

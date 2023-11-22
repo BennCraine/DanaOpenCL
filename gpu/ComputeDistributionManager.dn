@@ -1,27 +1,36 @@
 component provides gpu.ComputeDistributionManager requires gpu.ComputeManager,
-                                                            native gpu.OpenCLLib lib,
+                                                            gpu.Compute,
                                                             data.adt.List,
                                                             data.adt.HashTable,
                                                             data.adt.Queue,
+                                                            data.IntUtil iu,
                                                             io.Output out
                                                             {
 
     ComputeManager hardwareInfo
+    Compute nat
 
     List asynchQueues
     List synchQueues
 
+    HashTable readQueues
+    HashTable writeQueues
+    HashTable myRw[] = new HashTable[2]
+
     String physicalDevices[]
     HashTable physicalDevicesIDs
 
-    ComputeDistributionManager:ComputeDistributionManager(store ComputeManager physicalCompute) {
+    ComputeDistributionManager:ComputeDistributionManager(store ComputeManager physicalCompute, store Compute nativeCompute) {
         hardwareInfo = physicalCompute
+        nat = nativeCompute
 
         asynchQueues = new List()
         synchQueues = new List()
 
-        physicalDevices = physicalCompute.getComputeDevices()
-        int deviceIDs[] = physicalCompute.getComputeDeviceIDs()
+        physicalDevices = hardwareInfo.getComputeDevices()
+        int deviceIDs[] = hardwareInfo.getComputeDeviceIDs()
+
+        physicalDevicesIDs = new HashTable()
 
         //map device names and device IDs
         for (int i = 0; i < deviceIDs.arrayLength; i++) {
@@ -31,31 +40,19 @@ component provides gpu.ComputeDistributionManager requires gpu.ComputeManager,
             ChandleWrapper e = physicalDevicesIDs.get(physicalDevices[i].string)
             int x = e.handle
         }
+        out.println("deviceIDs len: $(iu.makeString(deviceIDs.arrayLength))")
 
         //create opencl context with all devices available
-        lib.createContext(deviceIDs)
+        nat.createContext_w(deviceIDs)
 
         //create one queue per physicalDevice
     }
 
-    HashTable[] ComputeDistributionManager:getReadWriteQueues(store HashTable readQ, store HashTable writeQ) {
+    HashTableItem[] ComputeDistributionManager:getReadWriteQueues(store HashTable rw[]) {
+        readQueues = new HashTable()
+        writeQueues = new HashTable()
         HashTableItem devicesMap[] = physicalDevicesIDs.getContents()
-        for (int i = 0; i < devicesMap.arrayLength; i++) {
-            HashTableItem nextItem = devicesMap[i]
-            ChandleWrapper x = nextItem.value
-
-            int queue_cl = lib.createSynchQueue(x.handle)
-            ComputeQueue readQueue = new ComputeQueue(queue_cl, new Queue(), new String(nextItem.key))
-            readQ.put(nextItem.key, readQueue)
-            
-            queue_cl = lib.createSynchQueue(x.handle)
-            readQueue = new ComputeQueue(queue_cl, new Queue(), new String(nextItem.key))
-            writeQ.put(nextItem.key, readQueue)
-        }
-        HashTable returnVal[] = new HashTable[2]
-        returnVal[0] = readQ
-        returnVal[1] = writeQ
-        return returnVal
+        return devicesMap
     }
 
     HashTableItem ComputeDistributionManager:mallocWhichDevice() {

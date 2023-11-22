@@ -1,6 +1,0 @@
-{
-"defaultLinks":	[
-    {"interface": "ComputeManager", "component": "Compute"},
-    {"interface": "LogicalComputeDevice", "component": "Compute"}
-    ]
-}
