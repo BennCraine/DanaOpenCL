@@ -22,24 +22,20 @@ const int RUN_KERNEL = 1
 
 interface LogicalComputeDevice {
     LogicalComputeDevice(ComputeManager physicalCompute)
-    void setPhysicalDevice(String devices[])
-
-    void addComputeQueue(bool isSynch, String physicalDevice)
-    Queue[] getComputeQueues()
-    void execQueue(Queue q)
-    void enqueueCommand(store ComputeCommand command, opt ComputeQueue queue)
 
     void createArray(char name[], int types, int length)
     void createMatrix(char name[], int type, int dim, int lengths[])
+
     void destroyArray(char name[])
     void destroyMatrix(char name[])
+
     void writeArray(char name[], dec fvalues[], int ivalues[])
     int[] readArray(char name[])
+
     void writeMatrix(char name[], dec fvalues[][], int ivalues[][])
     int[][] readMatrix(char name[])
 
     void loadProgram(char path[], char name[])
     String[] getPrograms()
-
-    ComputeCommand prepareKernel(char program[], String params[], store List l)
+    void runProgram(char program[], String params[], store List l)
 }

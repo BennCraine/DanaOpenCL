@@ -1,0 +1,60 @@
+
+        void LogicalComputeDevice:setPhysicalDevice(String devices[]) {
+            return 
+        }
+
+        void LogicalComputeDevice:addComputeQueue(bool isSynch, String physicalDevice) {
+            if(isSynch) {
+                //int queue_cl = lib.createSynchQueue()
+                int queue_cl
+                ComputeQueue firstQueue = new ComputeQueue(queue_cl, new Queue(), physicalDevices[0])
+                synchQueues.add(firstQueue)
+            }
+            else {
+                //int queue_cl = lib.createAsynchQueue(context_cl)
+                int queue_cl
+                ComputeQueue firstQueue = new ComputeQueue(queue_cl, new Queue(), physicalDevices[0])
+                asynchQueues.add(firstQueue)
+            }
+            return 
+        }
+
+        Queue[] LogicalComputeDevice:getComputeQueues() {
+            //TODO add asynch queues
+            Queue returnVal[] = new Queue[synchQueues.getLength()]
+            for (int i = 0; i < synchQueues.getLength(); i++) {
+                ComputeQueue cq = synchQueues.getIndex(i)
+                returnVal[i] = cq.q
+            }
+            return returnVal
+        }
+
+        void execCommand(ComputeCommand cmd, ComputeQueue cq) {
+            if (cmd.commandCode == RUN_KERNEL) {
+                ChandleWrapper hand = cmd.params.getIndex(0)
+                int kerHandle = hand.handle
+                int queueHandle = cq.queue_cl
+                out.println("running ker")
+                lib.runKernel(kerHandle, queueHandle)
+            }
+        }
+
+        void LogicalComputeDevice:execQueue(Queue q) {
+            //find queue
+
+            //call native lib to exec command
+
+
+            ComputeQueue cq = synchQueues.getIndex(0)
+            ComputeCommand cmd = cq.q.service()
+            execCommand(cmd, cq)
+            return
+        }
+
+        void LogicalComputeDevice:enqueueCommand(store ComputeCommand command, opt ComputeQueue queue) {
+            //TODO add support for multqueues
+            ComputeQueue q = synchQueues.getIndex(0)
+            ComputeCommand cloneCmd = clone command
+            q.q.add(cloneCmd)
+            return
+        }

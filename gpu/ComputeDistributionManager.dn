@@ -1,0 +1,72 @@
+component provides gpu.ComputeDistributionManager requires gpu.ComputeManager,
+                                                            native gpu.OpenCLLib lib,
+                                                            data.adt.List,
+                                                            data.adt.HashTable,
+                                                            data.adt.Queue,
+                                                            io.Output out
+                                                            {
+
+    ComputeManager hardwareInfo
+
+    List asynchQueues
+    List synchQueues
+
+    String physicalDevices[]
+    HashTable physicalDevicesIDs
+
+    ComputeDistributionManager:ComputeDistributionManager(store ComputeManager physicalCompute) {
+        hardwareInfo = physicalCompute
+
+        asynchQueues = new List()
+        synchQueues = new List()
+
+        physicalDevices = physicalCompute.getComputeDevices()
+        int deviceIDs[] = physicalCompute.getComputeDeviceIDs()
+
+        //map device names and device IDs
+        for (int i = 0; i < deviceIDs.arrayLength; i++) {
+            ChandleWrapper hand = new ChandleWrapper(deviceIDs[i])
+            out.println(physicalDevices[i].string)
+            physicalDevicesIDs.put(physicalDevices[i].string, hand) 
+            ChandleWrapper e = physicalDevicesIDs.get(physicalDevices[i].string)
+            int x = e.handle
+        }
+
+        //create opencl context with all devices available
+        lib.createContext(deviceIDs)
+
+        //create one queue per physicalDevice
+    }
+
+    HashTable[] ComputeDistributionManager:getReadWriteQueues(store HashTable readQ, store HashTable writeQ) {
+        HashTableItem devicesMap[] = physicalDevicesIDs.getContents()
+        for (int i = 0; i < devicesMap.arrayLength; i++) {
+            HashTableItem nextItem = devicesMap[i]
+            ChandleWrapper x = nextItem.value
+
+            int queue_cl = lib.createSynchQueue(x.handle)
+            ComputeQueue readQueue = new ComputeQueue(queue_cl, new Queue(), new String(nextItem.key))
+            readQ.put(nextItem.key, readQueue)
+            
+            queue_cl = lib.createSynchQueue(x.handle)
+            readQueue = new ComputeQueue(queue_cl, new Queue(), new String(nextItem.key))
+            writeQ.put(nextItem.key, readQueue)
+        }
+        HashTable returnVal[] = new HashTable[2]
+        returnVal[0] = readQ
+        returnVal[1] = writeQ
+        return returnVal
+    }
+
+    HashTableItem ComputeDistributionManager:mallocWhichDevice() {
+        HashTableItem keyValue = new HashTableItem()
+        keyValue.key = physicalDevices[0].string
+        keyValue.value = physicalDevicesIDs.get(physicalDevices[0].string)
+        return keyValue
+    }
+
+    void ComputeDistributionManager:execProgram(ChandleWrapperArray kernelHandles, HashTable memoryObjects) {
+        return
+    }
+
+}

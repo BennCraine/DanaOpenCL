@@ -1,26 +1,6 @@
 const int FLOAT = 0
 const int UINT = 1
 
-interface OpenCLLib {
-    void init()
-	void findPlatforms()
-    int[] getComputeDeviceIDs()
-    String[] getComputeDevices()
-    void createContext(int devices[])
-    int createAsynchQueue(int device)
-    int createSynchQueue(int device)
-    int createArray(int device, int byteSize)
-    int createMatrix(int device, int width, int height)
-    void destroyMemoryArea(int memObj_cl)
-    int createProgram(char source[])
-    void writeIntArray(int queue_cl, int memObj_cl, int values[])
-    int[] readIntArray(int queue_cl, int memObj_cl, int buf[])
-    void writeIntMatrix(int queue_cl, int memObj_cl, int buf[][])
-    int[][] readIntMatrix(int queue_cl, int memObj_cl, int buf[][])
-    int prepareKernel(int clProghandle, int paramHandles[], int paramCount, char program[])
-    void runKernel(int clKernel, int queue_cl)
-}
-
 data ChandleWrapper {
     int handle
 }
@@ -31,13 +11,14 @@ data ChandleWrapperArray {
 
 data OpenMemArea {
     ChandleWrapper hand
-    ChandleWrapper device
+    String device
     int dims
     int lengths[]
     int type
 }
 
 component provides gpu.ComputeManager, gpu.LogicalComputeDevice requires 
+                                                                gpu.ComputeDistributionManager,
                                                                 native OpenCLLib lib, 
                                                                 io.Output out, 
                                                                 io.TextFile,
@@ -65,14 +46,15 @@ component provides gpu.ComputeManager, gpu.LogicalComputeDevice requires
             int ids[] = lib.getComputeDeviceIDs()
             return ids
         }
+
+        void ComputeManager:plugInDevice(int deviceID) {}
+
+        void ComputeManager:unplugDevice(int deviceID) {}
     }
 
-    implementation LogicalComputeDevice {
-        String physicalDevices[]
-        HashTable physicalDevicesIDs
 
-        List asynchQueues
-        List synchQueues
+    implementation LogicalComputeDevice {
+        ComputeDistributionManager distManager
 
         HashTable readQueues
         HashTable writeQueues
@@ -82,130 +64,41 @@ component provides gpu.ComputeManager, gpu.LogicalComputeDevice requires
         HashTable programs
 
         LogicalComputeDevice:LogicalComputeDevice(ComputeManager physicalCompute) {
-            asynchQueues = new List()
-            synchQueues = new List()
+            distManager = new ComputeDistributionManager(physicalCompute)
 
             readQueues = new HashTable()
             writeQueues = new HashTable()
 
             openMemoryAreas = new HashTable()
-            physicalDevicesIDs = new HashTable()
 
             programs = new HashTable()
 
-            physicalDevices = physicalCompute.getComputeDevices()
-            int deviceIDs[] = physicalCompute.getComputeDeviceIDs()
-
-            for (int i = 0; i < deviceIDs.arrayLength; i++) {
-                ChandleWrapper hand = new ChandleWrapper(deviceIDs[i])
-                out.println(physicalDevices[i].string)
-                physicalDevicesIDs.put(physicalDevices[i].string, hand) 
-                ChandleWrapper e = physicalDevicesIDs.get(physicalDevices[i].string)
-                int x = e.handle
-            }
-
-            //create context in native
-            ChandleWrapper e = physicalDevicesIDs.get(physicalDevices[0].string)
-            ChandleWrapper f = physicalDevicesIDs.get(physicalDevices[1].string)
-            int params[] = new int[2]
-            params[0] = e.handle
-            params[1] = f.handle
-            lib.createContext(params)
-
-            //create queue in native
-            int queue_cl = lib.createAsynchQueue(e.handle)
-            ComputeQueue firstQueue = new ComputeQueue(queue_cl, new Queue(), physicalDevices[0])
-            synchQueues.add(firstQueue)
-
-            //create read queues, one for each physicalDevice
-            queue_cl = lib.createSynchQueue(e.handle)
-            ComputeQueue readQueue = new ComputeQueue(queue_cl, new Queue(), physicalDevices[0])
-            readQueues.put(physicalDevices[0].string, readQueue)
-
-            //create write queues, one for each physicalDevice
-            queue_cl = lib.createSynchQueue(e.handle)
-            ComputeQueue writeQueue = new ComputeQueue(queue_cl, new Queue(), physicalDevices[0])
-            writeQueues.put(physicalDevices[0].string, writeQueue)
+            HashTable readWrite[] = distManager.getReadWriteQueues(new HashTable(), new HashTable())
+            readQueues = readWrite[0]
+            writeQueues = readWrite[1]
         }
 
-        void LogicalComputeDevice:setPhysicalDevice(String devices[]) {
-            return 
-        }
-
-        void LogicalComputeDevice:addComputeQueue(bool isSynch, String physicalDevice) {
-            if(isSynch) {
-                //int queue_cl = lib.createSynchQueue()
-                int queue_cl
-                ComputeQueue firstQueue = new ComputeQueue(queue_cl, new Queue(), physicalDevices[0])
-                synchQueues.add(firstQueue)
-            }
-            else {
-                //int queue_cl = lib.createAsynchQueue(context_cl)
-                int queue_cl
-                ComputeQueue firstQueue = new ComputeQueue(queue_cl, new Queue(), physicalDevices[0])
-                asynchQueues.add(firstQueue)
-            }
-            return 
-        }
-
-        Queue[] LogicalComputeDevice:getComputeQueues() {
-            //TODO add asynch queues
-            Queue returnVal[] = new Queue[synchQueues.getLength()]
-            for (int i = 0; i < synchQueues.getLength(); i++) {
-                ComputeQueue cq = synchQueues.getIndex(i)
-                returnVal[i] = cq.q
-            }
-            return returnVal
-        }
-
-        void execCommand(ComputeCommand cmd, ComputeQueue cq) {
-            if (cmd.commandCode == RUN_KERNEL) {
-                ChandleWrapper hand = cmd.params.getIndex(0)
-                int kerHandle = hand.handle
-                int queueHandle = cq.queue_cl
-                out.println("running ker")
-                lib.runKernel(kerHandle, queueHandle)
-            }
-        }
-
-        void LogicalComputeDevice:execQueue(Queue q) {
-            //find queue
-
-            //call native lib to exec command
-
-
-            ComputeQueue cq = synchQueues.getIndex(0)
-            ComputeCommand cmd = cq.q.service()
-            execCommand(cmd, cq)
-            return
-        }
-
-        void LogicalComputeDevice:enqueueCommand(store ComputeCommand command, opt ComputeQueue queue) {
-            //TODO add support for multqueues
-            ComputeQueue q = synchQueues.getIndex(0)
-            ComputeCommand cloneCmd = clone command
-            q.q.add(cloneCmd)
-            return
-        }
 
         void LogicalComputeDevice:createArray(char name[], int types, int length) {
-            //TODO: multiply length by type size in bytes
-            ChandleWrapper device = physicalDevicesIDs.get(physicalDevices[0].string)
-            int clMemObj = lib.createArray(device.handle, length*8)
-            ChandleWrapper handle = new ChandleWrapper(clMemObj)
+            HashTableItem device = distManager.mallocWhichDevice()
+            ChandleWrapper deviceHandle = device.value
+            char deviceName[] = device.key
+            int clMemObj = lib.createArray(deviceHandle.handle, length*8)
+            ChandleWrapper arrayHandle = new ChandleWrapper(clMemObj)
             int lengths[] = new int[1]
             lengths[0] = length
-            OpenMemArea newMem = new OpenMemArea(handle, device, 1, lengths, types)
+            OpenMemArea newMem = new OpenMemArea(arrayHandle, new String(deviceName), 1, lengths, types)
             openMemoryAreas.put(name, newMem)
             return 
         }
 
         void LogicalComputeDevice:createMatrix(char name[], int type, int dim, int lengths[]) {
-            //int clMemObj = lib.createMatrix(context_cl, lengths[0], lengths[1])
-            ChandleWrapper device = physicalDevicesIDs.get(physicalDevices[0].string) 
-            int clMemObj = lib.createMatrix(device.handle, lengths[0], lengths[1])
-            ChandleWrapper handle = new ChandleWrapper(clMemObj)
-            OpenMemArea newMem = new OpenMemArea(handle, device, dim, lengths, type)
+            HashTableItem device = distManager.mallocWhichDevice()
+            ChandleWrapper deviceHandle = device.value
+            char deviceName[] = device.key
+            int clMemObj = lib.createMatrix(deviceHandle.handle, lengths[0], lengths[1])
+            ChandleWrapper matrixHandle = new ChandleWrapper(clMemObj)
+            OpenMemArea newMem = new OpenMemArea(matrixHandle, new String(deviceName), dim, lengths, type)
             openMemoryAreas.put(name, newMem)
             return 
         }
@@ -213,11 +106,14 @@ component provides gpu.ComputeManager, gpu.LogicalComputeDevice requires
         void LogicalComputeDevice:writeArray(char name[], dec fvalues[], int ivalues[]) {
             //get memObj from HashTable
             OpenMemArea inMem = openMemoryAreas.get(name)
+
             ChandleWrapper hand = inMem.hand
             int clMemObj = hand.handle
 
+            String device = inMem.device
+
             //check values.len = memObj.len
-            ComputeQueue q = writeQueues.get(physicalDevices[0].string)
+            ComputeQueue q = writeQueues.get(device.string)
             int clQueue = q.queue_cl
 
             lib.writeIntArray(clQueue, clMemObj, ivalues) 
@@ -228,7 +124,9 @@ component provides gpu.ComputeManager, gpu.LogicalComputeDevice requires
             ChandleWrapper hand = inMem.hand
             int clMemObj = hand.handle
 
-            ComputeQueue q = readQueues.get(physicalDevices[0].string)
+            String device = inMem.device
+
+            ComputeQueue q = readQueues.get(device.string)
             int clQueue = q.queue_cl
 
             int buf[] = new int[inMem.lengths[0]]
@@ -243,18 +141,22 @@ component provides gpu.ComputeManager, gpu.LogicalComputeDevice requires
             ChandleWrapper hand = inMem.hand
             int memObj = hand.handle
 
-            ComputeQueue q = writeQueues.get(physicalDevices[0].string)
+            String device = inMem.device
+
+            ComputeQueue q = writeQueues.get(device.string)
             int clQueue = q.queue_cl
 
             lib.writeIntMatrix(clQueue, memObj, ivalues) 
         }
-    
+
         int[][] LogicalComputeDevice:readMatrix(char name[]) {
             OpenMemArea inMem = openMemoryAreas.get(name)
             ChandleWrapper hand = inMem.hand
             int memObj = hand.handle
 
-            ComputeQueue q = readQueues.get(physicalDevices[0].string)
+            String device = inMem.device
+
+            ComputeQueue q = readQueues.get(device.string)
             int clQueue = q.queue_cl
 
             int buf[][] = new int[inMem.lengths[0]][inMem.lengths[1]]
@@ -264,7 +166,8 @@ component provides gpu.ComputeManager, gpu.LogicalComputeDevice requires
         }
 
         void LogicalComputeDevice:destroyArray(char name[]) {
-            ChandleWrapper handle = openMemoryAreas.get(name)
+            OpenMemArea inMem = openMemoryAreas.get(name)
+            ChandleWrapper handle = inMem.hand
             if(handle != null) {
                 lib.destroyMemoryArea(handle.handle)
             }
@@ -273,6 +176,12 @@ component provides gpu.ComputeManager, gpu.LogicalComputeDevice requires
         }
 
         void LogicalComputeDevice:destroyMatrix(char name[]) {
+            OpenMemArea inMem = openMemoryAreas.get(name)
+            ChandleWrapper handle = inMem.hand
+            if(handle != null) {
+                lib.destroyMemoryArea(handle.handle)
+            }
+            openMemoryAreas.delete(name)
             return
         }
 
@@ -337,9 +246,7 @@ component provides gpu.ComputeManager, gpu.LogicalComputeDevice requires
                 rawSource = new char[](rawSource, source.readLine())
                 rawSource = new char[](rawSource, "\n")
             }
-            out.print(rawSource)
             rawSource = stripSource(rawSource)
-            out.print(rawSource)
 
             int handles[] = lib.createProgram(rawSource)
             ChandleWrapper handlesWrapped[] = new ChandleWrapper[handles.arrayLength]
@@ -357,27 +264,33 @@ component provides gpu.ComputeManager, gpu.LogicalComputeDevice requires
             return null
         }
 
-        ComputeCommand LogicalComputeDevice:prepareKernel(char program[], String params[], store List l) {
+        void LogicalComputeDevice:runProgram(char program[], String params[], store List l) {
             ChandleWrapperArray arr = programs.get(program)
             ChandleWrapper handles[] = arr.array
-            
-            int clProghandle = handles[0].handle
 
+            HashTable paramMap = new HashTable()
+            
             int paramHandles[] = new int[params.arrayLength]
             for (int i = 0; i < params.arrayLength; i++) {
-                ChandleWrapper x = openMemoryAreas.get(params[i].string)
-                paramHandles[i] = x.handle
+                OpenMemArea x = openMemoryAreas.get(params[i].string)
+                ChandleWrapper memHandle = x.hand
+                paramHandles[i] = memHandle.handle
             }
 
             int paramCount = params.arrayLength
-            
-            int kernelHandle = lib.prepareKernel(clProghandle, paramHandles, paramCount, program)
-            ChandleWrapper kerHand = new ChandleWrapper(kernelHandle)
+            //choose which program handle to use or prepareKernel for all?
+            ChandleWrapper kernelHandles[] = new ChandleWrapper[handles.arrayLength]
+            for (int k = 0; k < handles.arrayLength; k++) {
+                int clProghandle = handles[k].handle
+                int kernelHandle = lib.prepareKernel(clProghandle, paramHandles, paramCount, program)
+                kernelHandles[k] = new ChandleWrapper(kernelHandle)
+            }
+            ChandleWrapperArray kerArr = new ChandleWrapperArray(kernelHandles)
 
-            ComputeCommand cmd = new ComputeCommand(RUN_KERNEL, l)
-            l.add(kerHand)
-            
-            return cmd
+            //hand kernels over to distManager with a map describing which params are on which devices
+            distManager.execProgram(kerArr, paramMap)
+
+            return
         }
     }
     

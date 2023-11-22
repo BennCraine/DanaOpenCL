@@ -4,4 +4,6 @@ interface ComputeManager {
 	void findPlatforms()
     String[] getComputeDevices()
     int[] getComputeDeviceIDs()
+    void plugInDevice(int deviceID)
+    void unplugDevice(int deviceID)
 }

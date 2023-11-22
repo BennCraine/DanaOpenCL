@@ -1,0 +1,27 @@
+uses data.String
+uses data.adt.HashTable
+uses gpu.ComputeManager
+uses data.adt.Queue
+
+data ComputeQueue {
+    int queue_cl
+    Queue q
+    String physicalDevice
+}
+
+data ChandleWrapper {
+    int handle
+}
+
+data ChandleWrapperArray {
+    ChandleWrapper array[]
+}
+
+interface ComputeDistributionManager {
+    ComputeDistributionManager(store ComputeManager physicalCompute)
+
+    HashTable[] getReadWriteQueues(store HashTable readQ, store HashTable writeQueue)
+
+    HashTableItem mallocWhichDevice()
+    void execProgram(ChandleWrapperArray kernelHandles, HashTable memoryObjects)
+}
