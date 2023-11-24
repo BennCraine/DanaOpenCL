@@ -51,7 +51,7 @@ component provides LogicalComputeDevice requires gpu.Compute,
         HashTableItem device = distManager.mallocWhichDevice()
         ChandleWrapper deviceHandle = device.value
         char deviceName[] = device.key
-        int clMemObj = nat.createArray_w(deviceHandle.handle, length*8)
+        int clMemObj = nat.createArray_w(deviceHandle.handle, length, types)
         ChandleWrapper arrayHandle = new ChandleWrapper(clMemObj)
         int lengths[] = new int[1]
         lengths[0] = length
@@ -65,7 +65,7 @@ component provides LogicalComputeDevice requires gpu.Compute,
         HashTableItem device = distManager.mallocWhichDevice()
         ChandleWrapper deviceHandle = device.value
         char deviceName[] = device.key
-        int clMemObj = nat.createMatrix_w(deviceHandle.handle, lengths[0], lengths[1])
+        int clMemObj = nat.createMatrix_w(deviceHandle.handle, lengths[0], lengths[1], type)
         ChandleWrapper matrixHandle = new ChandleWrapper(clMemObj)
         OpenMemArea newMem = new OpenMemArea(matrixHandle, new String(deviceName), dim, lengths, type)
         openMemoryAreas.put(name, newMem)

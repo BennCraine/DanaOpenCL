@@ -119,6 +119,7 @@ else
 endif
 
 opencl:
+	dnc ./gpu/Compute.dn
 	dnc ./gpu/Compute.dn -gni
 	cp ./OpenCLLib_dni.c ./resources-ext/
 	rm ./OpenCLLib_dni.c

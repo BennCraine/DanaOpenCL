@@ -1,7 +1,5 @@
-const int FLOAT = 0
-const int UINT = 1
-
 uses data.String
+
 interface OpenCLLib {
     void init()
 	void findPlatforms()
@@ -10,14 +8,18 @@ interface OpenCLLib {
     void createContext(int devices[])
     int createAsynchQueue(int device)
     int createSynchQueue(int device)
-    int createArray(int device, int byteSize)
-    int createMatrix(int device, int width, int height)
+    int createArray(int device, int length, int type)
+    int createMatrix(int device, int width, int height, int type)
     void destroyMemoryArea(int memObj_cl)
     int[] createProgram(char source[])
     void writeIntArray(int queue_cl, int memObj_cl, int values[])
     int[] readIntArray(int queue_cl, int memObj_cl, int buf[])
+    void writeFloatArray(int queue_cl, int memObj_cl, dec values[])
+    dec[] readFloatArray(int queue_cl, int memObj_cl, dec buf[])
     void writeIntMatrix(int queue_cl, int memObj_cl, int buf[][])
     int[][] readIntMatrix(int queue_cl, int memObj_cl, int buf[][])
+    void writeFloatMatrix(int queue_cl, int memObj_cl, dec buf[][])
+    dec[][] readFloatMatrix(int queue_cl, int memObj_cl, dec buf[][])
     int prepareKernel(int clProghandle, int paramHandles[], int paramCount, char program[])
     void runKernel(int clKernel, int queue_cl)
 }
@@ -51,11 +53,31 @@ component provides gpu.Compute requires native OpenCLLib lib,
     int Compute:createSynchQueue_w(int device) {
         return lib.createSynchQueue(device)
     }
-    int Compute:createArray_w(int device, int byteSize) {
-        return lib.createArray(device, byteSize)
+    int Compute:createArray_w(int device, int length, int type) {
+        if (type == FLOAT) {
+            int arr = lib.createArray(device, length, FLOAT)
+            return arr
+        }
+        else if (type == UINT) {
+            int arr = lib.createArray(device, length, UINT)
+            return arr
+        }
+        else {
+            return 0
+        }
     }
-    int Compute:createMatrix_w(int device, int width, int height) {
-        return lib.createMatrix(device, width, height)
+    int Compute:createMatrix_w(int device, int width, int height, int type) {
+        if (type == FLOAT) {
+            int mat = lib.createMatrix(device, width, height, FLOAT)
+            return mat
+        }
+        else if (type == UINT) {
+            int mat = lib.createMatrix(device, width, height, UINT)
+            return mat
+        }
+        else {
+            return 0
+        }
     }
     void Compute:destroyMemoryArea_w(int memObj_cl) {
         lib.destroyMemoryArea(memObj_cl)
@@ -70,11 +92,23 @@ component provides gpu.Compute requires native OpenCLLib lib,
     int[] Compute:readIntArray_w(int queue_cl, int memObj_cl, int buf[]) {
         return lib.readIntArray(queue_cl, memObj_cl, buf)
     }
+    void Compute:writeFloatArray_w(int queue_cl, int memObj_cl, dec values[]) {
+        lib.writeFloatArray(queue_cl, memObj_cl, values)
+    }
+    dec[] Compute:readFloatArray_w(int queue_cl, int memObj_cl, dec buf[]) {
+        return lib.readFloatArray(queue_cl, memObj_cl, buf)
+    }
     void Compute:writeIntMatrix_w(int queue_cl, int memObj_cl, int buf[][]) {
         lib.writeIntMatrix(queue_cl, memObj_cl, buf)
     }
     int[][] Compute:readIntMatrix_w(int queue_cl, int memObj_cl, int buf[][]) {
         return lib.readIntMatrix(queue_cl, memObj_cl, buf)
+    }
+    void Compute:writeFloatMatrix_w(int queue_cl, int memObj_cl, dec buf[][]) {
+        lib.writeFloatMatrix(queue_cl, memObj_cl, buf)
+    }
+    dec[][] Compute:readFloatMatrix_w(int queue_cl, int memObj_cl, dec buf[][]) {
+        return lib.readFloatMatrix(queue_cl, memObj_cl, buf)
     }
     int Compute:prepareKernel_w(int clProghandle, int paramHandles[], int paramCount, char program[]) {
         return lib.prepareKernel(clProghandle, paramHandles, paramCount, program)

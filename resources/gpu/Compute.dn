@@ -1,5 +1,8 @@
 uses data.String
 
+const int FLOAT = 0
+const int UINT = 1
+
 data ChandleWrapper {
     int handle
 }
@@ -24,14 +27,18 @@ interface Compute {
     void createContext_w(int devices[])
     int createAsynchQueue_w(int device)
     int createSynchQueue_w(int device)
-    int createArray_w(int device, int byteSize)
-    int createMatrix_w(int device, int width, int height)
+    int createArray_w(int device, int length, int type)
+    int createMatrix_w(int device, int width, int height, int type)
     void destroyMemoryArea_w(int memObj_cl)
     int[] createProgram_w(char source[])
     void writeIntArray_w(int queue_cl, int memObj_cl, int values[])
     int[] readIntArray_w(int queue_cl, int memObj_cl, int buf[])
+    void writeFloatArray_w(int queue_cl, int memObj_cl, dec values[])
+    dec[] readFloatArray_w(int queue_cl, int memObj_cl, dec buf[])
     void writeIntMatrix_w(int queue_cl, int memObj_cl, int buf[][])
     int[][] readIntMatrix_w(int queue_cl, int memObj_cl, int buf[][])
+    void writeFloatMatrix_w(int queue_cl, int memObj_cl, dec buf[][])
+    dec[][] readFloatMatrix_w(int queue_cl, int memObj_cl, dec buf[][])
     int prepareKernel_w(int clProghandle, int paramHandles[], int paramCount, char program[])
     void runKernel_w(int clKernel, int queue_cl)
 }

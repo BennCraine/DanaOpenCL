@@ -1,6 +1,7 @@
 //Written by Ben Craine, 2023
 
 //std lib headers
+#include <math.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -21,6 +22,9 @@
 #include "dana_api_1.7/nli_util.h"
 #include "dana_api_1.7/vmi_util.h"
 
+#define FLOAT 0
+#define UINT 1
+
 #define MAX_PLATFORMS 100
 #define MAX_DEVICES 100
 
@@ -31,6 +35,7 @@ static GlobalTypeLink* charArrayGT = NULL;
 static GlobalTypeLink* stringArrayGT = NULL;
 static GlobalTypeLink* stringItemGT = NULL;
 static GlobalTypeLink* intMatrixGT = NULL;
+static GlobalTypeLink* decArrayGT = NULL;
 
 cl_platform_id* globalClPlatforms;
 cl_uint numofPlatforms;
@@ -326,14 +331,28 @@ INSTRUCTION_DEF createArray(FrameData* cframe) {
     cl_context context = getMapping((cl_device_id) rawParam);
 
     rawParam = api->getParamInt(cframe, 1);
-    size_t bytes = (size_t) rawParam;
+    size_t length = (size_t) rawParam;
 
-    cl_mem newArray = clCreateBuffer(context, CL_MEM_READ_WRITE, bytes, NULL, &CL_err);
+    rawParam = api->getParamInt(cframe, 2);
+    size_t type = (uint64_t) rawParam;
+
+    size_t size;
+    if (type == FLOAT) {
+        size = sizeof(double_t)*length;
+    }
+    else if (type == UINT) {
+        size = sizeof(uint64_t)*length;
+    }
+    else {
+        api->returnInt(cframe, (uint64_t) 0);
+        return RETURN_OK;
+    }
+
+    cl_mem newArray = clCreateBuffer(context, CL_MEM_READ_WRITE, size, NULL, &CL_err);
 
     if (CL_err != CL_SUCCESS) {
         printf("issue in array creation\n");
     }
-
 
     api->returnInt(cframe, (uint64_t) newArray);
 
@@ -356,7 +375,7 @@ INSTRUCTION_DEF writeIntArray(FrameData* cframe) {
         rawHostArrayCpy++;
     }
 
-    cl_int CL_err = clEnqueueWriteBuffer(queue, memObj, CL_TRUE, 0, hostArrayLen*8, rawHostArray, NULL, NULL, NULL);
+    cl_int CL_err = clEnqueueWriteBuffer(queue, memObj, CL_TRUE, 0, hostArrayLen*sizeof(uint64_t), rawHostArray, NULL, NULL, NULL);
     if (CL_err != CL_SUCCESS) {
         printf("error in write buffer");
     }
@@ -374,13 +393,62 @@ INSTRUCTION_DEF readIntArray(FrameData* cframe) {
 
     uint64_t* rawHostArray = (uint64_t*) api->getArrayContent(hostArray);
 
-    cl_int CL_err = clEnqueueReadBuffer(queue, memObj, CL_TRUE, 0, hostArrayLen*8, rawHostArray, NULL, NULL, NULL);
+    cl_int CL_err = clEnqueueReadBuffer(queue, memObj, CL_TRUE, 0, hostArrayLen*sizeof(uint64_t), rawHostArray, NULL, NULL, NULL);
     if (CL_err != CL_SUCCESS) {
         printf("error in read buffer");
     }
 
     for (int i = 0; i < hostArrayLen; i++) {
         api->setArrayCellInt(hostArray, i, *rawHostArray);
+        rawHostArray++;
+    }
+
+    api->returnEl(cframe, hostArray);
+
+    return RETURN_OK;    
+}
+
+INSTRUCTION_DEF writeFloatArray(FrameData* cframe) {
+    uint64_t rawParam = api->getParamInt(cframe, 0);
+    cl_command_queue queue = (cl_command_queue) rawParam;
+    rawParam = api->getParamInt(cframe, 1);
+    cl_mem memObj = (cl_mem) rawParam;
+
+    DanaEl* hostArray = api->getParamEl(cframe, 2);
+    size_t hostArrayLen = api->getArrayLength(hostArray);
+
+    double_t* rawHostArray = (double_t*) malloc(sizeof(double_t)*hostArrayLen);
+    double_t* rawHostArrayCpy = rawHostArray;
+    for (int i = 0; i < hostArrayLen; i++) {
+        *rawHostArrayCpy = api->getArrayCellDec(hostArray, i);
+        rawHostArrayCpy++;
+    }
+
+    cl_int CL_err = clEnqueueWriteBuffer(queue, memObj, CL_TRUE, 0, hostArrayLen*sizeof(double_t), rawHostArray, NULL, NULL, NULL);
+    if (CL_err != CL_SUCCESS) {
+        printf("error in write buffer");
+    }
+    return RETURN_OK;    
+}
+
+INSTRUCTION_DEF readFloatArray(FrameData* cframe) {
+    uint64_t rawParam = api->getParamInt(cframe, 0);
+    cl_command_queue queue = (cl_command_queue) rawParam;
+    rawParam = api->getParamInt(cframe, 1);
+    cl_mem memObj = (cl_mem) rawParam;
+
+    DanaEl* hostArray = api->getParamEl(cframe, 2);
+    size_t hostArrayLen = api->getArrayLength(hostArray);
+
+    double_t* rawHostArray = (double_t*) api->getArrayContent(hostArray);
+
+    cl_int CL_err = clEnqueueReadBuffer(queue, memObj, CL_TRUE, 0, hostArrayLen*sizeof(double_t), rawHostArray, NULL, NULL, NULL);
+    if (CL_err != CL_SUCCESS) {
+        printf("error in read buffer");
+    }
+
+    for (int i = 0; i < hostArrayLen; i++) {
+        api->setArrayCellDec(hostArray, i, *rawHostArray);
         rawHostArray++;
     }
 
@@ -401,15 +469,27 @@ INSTRUCTION_DEF createMatrix(FrameData* cframe) {
     rawParam = api->getParamInt(cframe, 2);
     size_t y_bytes = (size_t) rawParam;
 
+    rawParam = api->getParamInt(cframe, 3);
+    uint64_t type = (uint64_t) rawParam;
+
     cl_image_desc desc = {CL_MEM_OBJECT_IMAGE2D, x_bytes, y_bytes, 0, 1, 0, 0, 0, 0, NULL};
-    cl_image_format form = {CL_R, CL_UNSIGNED_INT32};
+    cl_image_format form;
+    if (type == FLOAT) {
+        form = (cl_image_format) {CL_R, CL_FLOAT};
+    }
+    else if (type == UINT) {
+        form = (cl_image_format) {CL_R, CL_UNSIGNED_INT32};
+    }
+    else {
+        api->returnInt(cframe, (uint64_t) 0);
+        return RETURN_OK;
+    }
 
     cl_mem newMatrix = clCreateImage(context, CL_MEM_READ_WRITE, &form, &desc, NULL, &CL_err);
 
     if (CL_err != CL_SUCCESS) {
         printf("issue in matrix creation\n");
     }
-
 
     api->returnInt(cframe, (uint64_t) newMatrix);
 
@@ -470,6 +550,69 @@ INSTRUCTION_DEF readIntMatrix(FrameData* cframe) {
     for (int i = 0; i < hostMatrixLens[0]; i++) {
         for (int j = 0; j < hostMatrixLens[1]; j++) {
             api->setArrayCellInt(hostMatrix, (i*hostMatrixLens[1])+j, *rawHostMatrix);
+            rawHostMatrix++;
+        }
+    }
+
+    api->returnEl(cframe, hostMatrix);
+
+    return RETURN_OK;    
+}
+
+INSTRUCTION_DEF writeFloatMatrix(FrameData* cframe) {
+    uint64_t rawParam = api->getParamInt(cframe, 0);
+    cl_command_queue queue = (cl_command_queue) rawParam;
+    rawParam = api->getParamInt(cframe, 1);
+    cl_mem memObj = (cl_mem) rawParam;
+
+    DanaEl* hostMatrix = api->getParamEl(cframe, 2);
+    size_t dim = 2; //only supporting 2d matricies
+    size_t* dims = api->getArrayDimensions(hostMatrix, &dim);
+
+    float_t* rawHostMatrix = (float_t*) malloc(sizeof(float_t)*dims[0]*dims[1]);
+    float_t* rawHostMatrixCpy = rawHostMatrix;
+    for (int i = 0; i < dims[0]; i++) {
+        for (int j = 0; j < dims[1]; j++) {
+            *rawHostMatrixCpy = api->getArrayCellDec(hostMatrix, (i*dims[1])+j);
+            rawHostMatrixCpy++;
+        }
+    }
+
+    size_t origin[] = {0, 0, 0};
+    size_t region[] = {dims[0], dims[1], 1};
+    cl_int CL_err = clEnqueueWriteImage(queue, memObj, CL_TRUE, origin, region, 0, 0, rawHostMatrix, 0, NULL, NULL);
+
+    if (CL_err != CL_SUCCESS) {
+        printf("error in write buffer: %d\n", CL_err);
+    }
+    else {
+    }
+    return RETURN_OK;    
+}
+
+INSTRUCTION_DEF readFloatMatrix(FrameData* cframe) {
+    uint64_t rawParam = api->getParamInt(cframe, 0);
+    cl_command_queue queue = (cl_command_queue) rawParam;
+    rawParam = api->getParamInt(cframe, 1);
+    cl_mem memObj = (cl_mem) rawParam;
+
+    DanaEl* hostMatrix = api->getParamEl(cframe, 2);
+    size_t dim = 2;
+    size_t* hostMatrixLens = api->getArrayDimensions(hostMatrix, &dim);
+
+    float_t* rawHostMatrix = (float_t*) malloc(sizeof(float_t)*hostMatrixLens[0]*hostMatrixLens[1]);
+
+    size_t origin[] = {0, 0, 0};
+    size_t region[] = {hostMatrixLens[0], hostMatrixLens[1], 1};
+
+    int CL_Err = clEnqueueReadImage(queue, memObj, CL_TRUE, origin, region, 0, 0, rawHostMatrix, 0, NULL, NULL);
+    if (CL_Err != CL_SUCCESS) {
+        printf("error in read matrix: %d\n", CL_Err);
+    }
+
+    for (int i = 0; i < hostMatrixLens[0]; i++) {
+        for (int j = 0; j < hostMatrixLens[1]; j++) {
+            api->setArrayCellDec(hostMatrix, (i*hostMatrixLens[1])+j, *rawHostMatrix);
             rawHostMatrix++;
         }
     }
@@ -626,9 +769,13 @@ Interface* load(CoreAPI* capi) {
     setInterfaceFunction("createArray", createArray);
     setInterfaceFunction("writeIntArray", writeIntArray);
     setInterfaceFunction("readIntArray", readIntArray);
+    setInterfaceFunction("writeFloatArray", writeFloatArray);
+    setInterfaceFunction("readFloatArray", readFloatArray);
     setInterfaceFunction("createMatrix", createMatrix);
     setInterfaceFunction("writeIntMatrix", writeIntMatrix);
     setInterfaceFunction("readIntMatrix", readIntMatrix);
+    setInterfaceFunction("writeFloatMatrix", writeFloatMatrix);
+    setInterfaceFunction("readFloatMatrix", readFloatMatrix);
     setInterfaceFunction("destroyMemoryArea", destroyMemoryArea);
     setInterfaceFunction("createProgram", createProgram);
     setInterfaceFunction("prepareKernel", prepareKernel);
@@ -639,6 +786,7 @@ Interface* load(CoreAPI* capi) {
     stringItemGT = api->resolveGlobalTypeMapping(getTypeDefinition("String"));
     intArrayGT = api->resolveGlobalTypeMapping(getTypeDefinition("int[]"));
     intMatrixGT = api->resolveGlobalTypeMapping(getTypeDefinition("int[][]"));
+    decArrayGT = api->resolveGlobalTypeMapping(getTypeDefinition("dec[]"));
 
     return getPublicInterface();
 }
@@ -649,4 +797,5 @@ void unload() {
     api->decrementGTRefCount(stringItemGT);
     api->decrementGTRefCount(intArrayGT);
     api->decrementGTRefCount(intMatrixGT);
+    api->decrementGTRefCount(decArrayGT);
 }
