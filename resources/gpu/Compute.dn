@@ -27,7 +27,7 @@ interface Compute {
     int createArray_w(int device, int byteSize)
     int createMatrix_w(int device, int width, int height)
     void destroyMemoryArea_w(int memObj_cl)
-    int createProgram_w(char source[])
+    int[] createProgram_w(char source[])
     void writeIntArray_w(int queue_cl, int memObj_cl, int values[])
     int[] readIntArray_w(int queue_cl, int memObj_cl, int buf[])
     void writeIntMatrix_w(int queue_cl, int memObj_cl, int buf[][])

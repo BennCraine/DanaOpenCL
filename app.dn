@@ -2,7 +2,35 @@ component provides App requires gpu.LogicalComputeDevice, data.adt.List, io.Outp
 
     int App:main(AppParam params[]) {
         LogicalComputeDevice myDevice = new LogicalComputeDevice()
-        myDevice.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/vadd2.cl", "test")
+
+        myDevice.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/vadd2.cl", "vadd")
+        myDevice.createArray("A", 1, 5)
+        myDevice.createArray("B", 1, 5)
+        myDevice.createArray("C", 1, 5)
+
+        int vecOne[] = new int[5]
+        int vecTwo[] = new int[5]
+        for (int i =0; i < 5;i++) {
+            vecOne[i] = 5
+            vecTwo[i] = 0
+        }
+        myDevice.writeArray("A", null, vecOne)
+        myDevice.writeArray("B", null, vecOne)
+        myDevice.writeArray("C", null, vecTwo)
+
+        String paramss[] = new String[3]
+        paramss[0] = new String("A")
+        paramss[1] = new String("B")
+        paramss[2] = new String("C")
+
+        myDevice.runProgram("vadd", paramss, new List())
+
+        int result[] = myDevice.readArray("C")
+
+        for (int i =0; i < 5;i++) {
+            out.println("$(iu.makeString(result[i]))")
+        }
+
         int dims[] = new int[2]
         dims[0] = 7
         dims[1] = 8

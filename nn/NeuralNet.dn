@@ -1,0 +1,58 @@
+component provides nn.NeuralNet requires gpu.LogicalComputeDevice, data.IntUtil iu{
+    LogicalComputeDevice myDevice
+
+    int inputSize
+    int trainingSetSize
+    int outputSize
+    int hiddenLayerSizes[]
+
+    int activationMethod
+    int trainingAlgo
+
+    NeuralNet:NeuralNet() {
+        myDevice = new LogicalComputeDevice()
+        //load required programs
+    }
+    void NeuralNet:setInputVectorSize(int sz){
+        inputeSize = sz
+    }
+    void NeuralNet:setTrainingSetSize(int sz){
+        trainingSetSize = sz
+    }
+    void NeuralNet:setOutputVectorSize(int sz){
+        outputSize = sz
+    }
+    void NeuralNet:setHiddenLayerSizes(int sz[]){
+        hiddenLayerSizes = sz
+    }
+    void NeuralNet:setHiddenLayerActivation(int layer, int function){
+        activationMethod = function
+    }
+    void NeuralNet:setTrainingAlgo(int algo){
+        trainingAlgo = algo
+    }
+    void NeuralNet:train(dec trainSet[][]){
+        myDevice.createMatrix("trainingMatrix", 1, 2, new int[2](inputeSize, trainingSetSize))
+        myDevice.writeMatrix("trainingMatrix", trainSet, null)
+
+        for (int i = 0; i < hiddenLayerSizes.arrayLength; i++) {
+            if (i = 0) {
+                myDevice.createMatrix("w$(i)", 1, 2, new int[2](hiddenLayerSizes[i], inputSize))
+                myDevice.createArray("b$(i)", 1, inputeSize)
+            }
+            else {
+                myDevice.createMatrix("w$(i)", 1, 2, new int[2](hiddenLayerSizes[i], hiddenLayerSizes[i-1]))
+                myDevice.createArray("b$(i)", 1, hiddenLayerSizes[i-1])
+            }
+        }
+
+        myDevice.createArray("output", 1, outputSize)
+
+        
+    }
+
+    dec[] NeuralNet:predict(dec vect[]){
+
+    }
+    
+}

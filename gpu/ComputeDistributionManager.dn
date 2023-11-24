@@ -13,10 +13,6 @@ component provides gpu.ComputeDistributionManager requires gpu.ComputeManager,
     List asynchQueues
     List synchQueues
 
-    HashTable readQueues
-    HashTable writeQueues
-    HashTable myRw[] = new HashTable[2]
-
     String physicalDevices[]
     HashTable physicalDevicesIDs
 
@@ -46,23 +42,77 @@ component provides gpu.ComputeDistributionManager requires gpu.ComputeManager,
         nat.createContext_w(deviceIDs)
 
         //create one queue per physicalDevice
+        for (int i = 0; i < deviceIDs.arrayLength; i++) {
+            int queue_cl = nat.createSynchQueue_w(deviceIDs[i])
+            ComputeQueue newQ = new ComputeQueue(queue_cl, new Queue(), physicalDevices[i], deviceIDs[i])
+            synchQueues.add(newQ)
+        }
     }
 
     HashTableItem[] ComputeDistributionManager:getReadWriteQueues(store HashTable rw[]) {
-        readQueues = new HashTable()
-        writeQueues = new HashTable()
         HashTableItem devicesMap[] = physicalDevicesIDs.getContents()
         return devicesMap
     }
 
     HashTableItem ComputeDistributionManager:mallocWhichDevice() {
         HashTableItem keyValue = new HashTableItem()
-        keyValue.key = physicalDevices[0].string
-        keyValue.value = physicalDevicesIDs.get(physicalDevices[0].string)
+        keyValue.key = physicalDevices[1].string
+        keyValue.value = physicalDevicesIDs.get(physicalDevices[1].string)
         return keyValue
     }
 
+    ComputeQueue getQueueByDevice(int device) {
+        for (int i = 0; i < synchQueues.getLength(); i++) {
+            ComputeQueue q = synchQueues.getIndex(i)
+            if (q.physicalDeviceID == device) {
+                return q
+            }
+        }
+        return null
+    }
+
     void ComputeDistributionManager:execProgram(ChandleWrapperArray kernelHandles, HashTable memoryObjects) {
+        HashTableItem memObjs[] = memoryObjects.getContents()
+
+        ChandleWrapper kernelHandlesArr[] = kernelHandles.array
+        int rawKerHandles[] = new int[kernelHandlesArr.arrayLength]
+        bool kerPrepSuccess[] = new bool[kernelHandlesArr.arrayLength]
+
+        for (int i = 0; i < rawKerHandles.arrayLength; i++) {
+            rawKerHandles[i] = kernelHandlesArr[i].handle
+            out.println("raw kernel: $(iu.makeString(rawKerHandles[i]))")
+            if (rawKerHandles[i] != 0) {
+                kerPrepSuccess[i] = true
+            }
+            else {
+                kerPrepSuccess[i] = false
+            }
+        }
+
+        int succCount = 0 
+        int kerIndex = 0
+        int kerToExec = 0
+        for (int k = 0; k < kerPrepSuccess.arrayLength; k++) {
+            if (kerPrepSuccess[k]) {
+                succCount += 1
+                kerIndex = k
+            }
+        }
+        if (succCount == 1) {
+            out.println("execing kernel")
+            kerToExec = rawKerHandles[kerIndex]
+            String device = memObjs[0].value
+            ChandleWrapper devIdWrap = physicalDevicesIDs.get(device.string)
+            int dev = devIdWrap.handle
+            ComputeQueue q = getQueueByDevice(dev)
+            nat.runKernel_w(kerToExec, q.queue_cl)
+        }
+        else if (succCount == 0) {
+
+        }
+        else { //succCount > 1
+
+        }
         return
     }
 

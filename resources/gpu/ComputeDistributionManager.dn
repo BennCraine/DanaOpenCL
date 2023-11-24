@@ -7,6 +7,7 @@ data ComputeQueue {
     int queue_cl
     Queue q
     String physicalDevice
+    int physicalDeviceID
 }
 
 data ChandleWrapper {

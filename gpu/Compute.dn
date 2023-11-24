@@ -13,7 +13,7 @@ interface OpenCLLib {
     int createArray(int device, int byteSize)
     int createMatrix(int device, int width, int height)
     void destroyMemoryArea(int memObj_cl)
-    int createProgram(char source[])
+    int[] createProgram(char source[])
     void writeIntArray(int queue_cl, int memObj_cl, int values[])
     int[] readIntArray(int queue_cl, int memObj_cl, int buf[])
     void writeIntMatrix(int queue_cl, int memObj_cl, int buf[][])
@@ -60,8 +60,9 @@ component provides gpu.Compute requires native OpenCLLib lib,
     void Compute:destroyMemoryArea_w(int memObj_cl) {
         lib.destroyMemoryArea(memObj_cl)
     }
-    int Compute:createProgram_w(char source[]) {
-        return lib.createProgram(source)
+    int[] Compute:createProgram_w(char source[]) {
+        int x[] = lib.createProgram(source)
+        return x
     }
     void Compute:writeIntArray_w(int queue_cl, int memObj_cl, int values[]) {
         lib.writeIntArray(queue_cl, memObj_cl, values)

@@ -35,10 +35,6 @@ component provides LogicalComputeDevice requires gpu.Compute,
         for (int i = 0; i < rw.arrayLength; i++) {
             HashTableItem nextItem = rw[i]
             ChandleWrapper x = nextItem.value
-            out.println("---DANA---")
-            out.println("$(nextItem.key)")
-            out.println("$(iu.makeString(x.handle))")
-            out.println("---DANA---")
 
             int queue_cl = nat.createSynchQueue_w(x.handle)
             ComputeQueue readQueue = new ComputeQueue(queue_cl, new Queue(), new String(nextItem.key))
@@ -60,6 +56,7 @@ component provides LogicalComputeDevice requires gpu.Compute,
         int lengths[] = new int[1]
         lengths[0] = length
         OpenMemArea newMem = new OpenMemArea(arrayHandle, new String(deviceName), 1, lengths, types)
+        out.println("Array Name: $(name)")
         openMemoryAreas.put(name, newMem)
         return 
     }
@@ -238,7 +235,7 @@ component provides LogicalComputeDevice requires gpu.Compute,
 
     void LogicalComputeDevice:runProgram(char program[], String params[], store List l) {
         ChandleWrapperArray arr = programs.get(program)
-        ChandleWrapper handles[] = arr.array
+        ChandleWrapper progHandles[] = arr.array
 
         HashTable paramMap = new HashTable()
         
@@ -247,15 +244,19 @@ component provides LogicalComputeDevice requires gpu.Compute,
             OpenMemArea x = openMemoryAreas.get(params[i].string)
             ChandleWrapper memHandle = x.hand
             paramHandles[i] = memHandle.handle
+            String device = x.device
+            paramMap.put(params[i].string, device)
         }
 
         int paramCount = params.arrayLength
         //choose which program handle to use or prepareKernel for all?
-        ChandleWrapper kernelHandles[] = new ChandleWrapper[handles.arrayLength]
-        for (int k = 0; k < handles.arrayLength; k++) {
-            int clProghandle = handles[k].handle
-            int kernelHandle = nat.prepareKernel_w(clProghandle, paramHandles, paramCount, program)
-            kernelHandles[k] = new ChandleWrapper(kernelHandle)
+        ChandleWrapper kernelHandles[] = new ChandleWrapper[progHandles.arrayLength]
+        int rawKerHandles[] = new int[progHandles.arrayLength]
+        bool kerPrepSuccess[] = new bool[progHandles.arrayLength]
+        for (int k = 0; k < progHandles.arrayLength; k++) {
+            int clProghandle = progHandles[k].handle
+            rawKerHandles[k] = nat.prepareKernel_w(clProghandle, paramHandles, paramCount, program)
+            kernelHandles[k] = new ChandleWrapper(rawKerHandles[k])
         }
         ChandleWrapperArray kerArr = new ChandleWrapperArray(kernelHandles)
 

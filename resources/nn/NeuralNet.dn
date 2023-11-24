@@ -1,0 +1,15 @@
+const int RELU = 0
+
+const int BACK_PROP = 0
+
+interface NeuralNet {
+    NeuralNet()
+    void setInputVectorSize(int sz)
+    void setTrainingSetSize(int sz)
+    void setOutputVectorSize(int sz)
+    void setHiddenLayerSizes(int sz[])
+    void setHiddenLayerActivation(int layer, int function)
+    void setTrainingAlgo(int algo)
+    void train(dec trainSet[][])
+    dec[] predict(dec vect[])
+}
