@@ -121,7 +121,10 @@ endif
 opencl:
 	dnc ./gpu/Compute.dn
 	dnc ./gpu/Compute.dn -gni
-	cp ./OpenCLLib_dni.c ./resources-ext/
+	ifeq ($(OS),Windows_NT)
+		$(CP_CMD) .\OpenCLLib_dni.c .\resources-ext\
+	else
+		$(CP_CMD) ./OpenCLLib_dni.c ./resources-ext/
 	rm ./OpenCLLib_dni.c
 	dnc ./gpu/ComputeManager.dn
 	dnc ./gpu/ComputeDistributionManager.dn
