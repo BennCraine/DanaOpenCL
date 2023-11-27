@@ -6,7 +6,9 @@ component provides LogicalComputeDevice requires gpu.Compute,
                                                 data.adt.Queue,
                                                 io.Output out,
                                                 io.TextFile,
-                                                data.IntUtil iu
+                                                data.IntUtil iu,
+                                                data.StringUtil su,
+                                                data.DecUtil du
                                                 {
 
     ComputeDistributionManager distManager
@@ -55,6 +57,7 @@ component provides LogicalComputeDevice requires gpu.Compute,
         ChandleWrapper arrayHandle = new ChandleWrapper(clMemObj)
         int lengths[] = new int[1]
         lengths[0] = length
+        out.println("creating array with type: $(iu.makeString(types))")
         OpenMemArea newMem = new OpenMemArea(arrayHandle, new String(deviceName), 1, lengths, types)
         out.println("Array Name: $(name)")
         openMemoryAreas.put(name, newMem)
@@ -76,6 +79,10 @@ component provides LogicalComputeDevice requires gpu.Compute,
         //get memObj from HashTable
         OpenMemArea inMem = openMemoryAreas.get(name)
 
+        out.println("arr type: $(iu.makeString(inMem.type))")
+        out.println("arr type: $(FLOAT)")
+
+
         ChandleWrapper hand = inMem.hand
         int clMemObj = hand.handle
 
@@ -85,10 +92,21 @@ component provides LogicalComputeDevice requires gpu.Compute,
         ComputeQueue q = writeQueues.get(device.string)
         int clQueue = q.queue_cl
 
-        nat.writeIntArray_w(clQueue, clMemObj, ivalues) 
+        if (inMem.type == FLOAT && ivalues == null && fvalues.arrayLength == inMem.lengths[0]) {
+            out.println("writing dec arr")
+            nat.writeFloatArray_w(clQueue, clMemObj, fvalues)
+        }
+        else if (inMem.type == UINT && fvalues == null && ivalues.arrayLength == inMem.lengths[0]) {
+            out.println("writing int arr")
+            nat.writeIntArray_w(clQueue, clMemObj, ivalues) 
+        }
+        else {
+            out.println("err in LCD write array")
+        }
     }
 
-    int[] LogicalComputeDevice:readArray(char name[]) {
+    Vector LogicalComputeDevice:readArray(char name[]) {
+        Vector v = new Vector()
         OpenMemArea inMem = openMemoryAreas.get(name)
         ChandleWrapper hand = inMem.hand
         int clMemObj = hand.handle
@@ -98,11 +116,22 @@ component provides LogicalComputeDevice requires gpu.Compute,
         ComputeQueue q = readQueues.get(device.string)
         int clQueue = q.queue_cl
 
-        int buf[] = new int[inMem.lengths[0]]
+        if (inMem.type == FLOAT) {
+            dec buf[] = new dec[inMem.lengths[0]]
 
-        buf = nat.readIntArray_w(clQueue, clMemObj, buf)
+            buf = nat.readFloatArray_w(clQueue, clMemObj, buf)
+            v.fvalues = buf
+            v.ivalues = null
+            return v
+        }
+        else {
+            int buf[] = new int[inMem.lengths[0]]
 
-        return buf
+            buf = nat.readIntArray_w(clQueue, clMemObj, buf)
+            v.ivalues = buf
+            v.fvalues = null
+            return v
+        }
     }
 
     void LogicalComputeDevice:writeMatrix(char name[], dec fvalues[][], int ivalues[][]) {
@@ -115,10 +144,20 @@ component provides LogicalComputeDevice requires gpu.Compute,
         ComputeQueue q = writeQueues.get(device.string)
         int clQueue = q.queue_cl
 
-        nat.writeIntMatrix_w(clQueue, memObj, ivalues) 
+        if (inMem.type == FLOAT && ivalues == null && fvalues[0].arrayLength == inMem.lengths[0] && fvalues[1].arrayLength == inMem.lengths[1]) {
+            nat.writeFloatMatrix_w(clQueue, memObj, fvalues) 
+        }
+        else if (inMem.type == UINT && fvalues == null && ivalues[0].arrayLength == inMem.lengths[0] && ivalues[1].arrayLength == inMem.lengths[1]) {
+            nat.writeIntMatrix_w(clQueue, memObj, ivalues) 
+        }
+        else {
+            out.println("Err in LDC write matrix")
+        }
     }
 
-    int[][] LogicalComputeDevice:readMatrix(char name[]) {
+    Matrix LogicalComputeDevice:readMatrix(char name[]) {
+        Matrix m = new Matrix()
+
         OpenMemArea inMem = openMemoryAreas.get(name)
         ChandleWrapper hand = inMem.hand
         int memObj = hand.handle
@@ -128,10 +167,20 @@ component provides LogicalComputeDevice requires gpu.Compute,
         ComputeQueue q = readQueues.get(device.string)
         int clQueue = q.queue_cl
 
-        int buf[][] = new int[inMem.lengths[0]][inMem.lengths[1]]
-
-        buf = nat.readIntMatrix_w(clQueue, memObj, buf)
-        return buf
+        if (inMem.type == FLOAT) {
+            dec buf[][] = new dec[inMem.lengths[0]][inMem.lengths[1]]
+            buf = nat.readFloatMatrix_w(clQueue, memObj, buf)
+            m.fvalues = buf
+            m.ivalues = null
+            return m
+        }
+        else {
+            int buf[][] = new int[inMem.lengths[0]][inMem.lengths[1]]
+            buf = nat.readIntMatrix_w(clQueue, memObj, buf)
+            m.ivalues = buf
+            m.fvalues = null
+            return m
+        }
     }
 
     void LogicalComputeDevice:destroyArray(char name[]) {
@@ -215,7 +264,6 @@ component provides LogicalComputeDevice requires gpu.Compute,
             rawSource = new char[](rawSource, source.readLine())
             rawSource = new char[](rawSource, "\n")
         }
-        rawSource = stripSource(rawSource)
 
         int handles[] = nat.createProgram_w(rawSource)
         ChandleWrapper handlesWrapped[] = new ChandleWrapper[handles.arrayLength]
@@ -233,6 +281,37 @@ component provides LogicalComputeDevice requires gpu.Compute,
         return null
     }
 
+    bool isConst(char param[]) {
+        String exploded[] = su.explode(param, ":")
+        if (exploded[0].string == "const") {
+            return true
+        }
+        else {
+            return false
+        }
+    }
+
+    bool isFloat(char param[]) {
+        String exploded[] = su.explode(param, ":")
+        if (su.ifind(exploded[1].string, ".") == StringUtil.NOT_FOUND) {
+            return false
+        }
+        else {
+            return true
+        }
+    }
+
+    dec getDecConst(char param[]) {
+        String exploded[] = su.explode(param, ":")
+        out.println(exploded[1].string)
+        return du.decFromString(exploded[1].string)
+    }
+
+    int getIntConst(char param[]) {
+        String exploded[] = su.explode(param, ":")
+        return iu.intFromString(exploded[1].string)
+    }
+
     void LogicalComputeDevice:runProgram(char program[], String params[], store List l) {
         ChandleWrapperArray arr = programs.get(program)
         ChandleWrapper progHandles[] = arr.array
@@ -241,6 +320,25 @@ component provides LogicalComputeDevice requires gpu.Compute,
         
         int paramHandles[] = new int[params.arrayLength]
         for (int i = 0; i < params.arrayLength; i++) {
+            if (isConst(params[i].string)) {
+                out.println("is a constant")
+                if (isFloat(params[i].string)) {
+                    out.println("is a float")
+                    createArray(params[i].string, FLOAT, 1)
+                    dec vals[] = new dec[1]
+                    vals[0] = getDecConst(params[i].string)
+                    out.println("val: $(du.makeString(vals[0]))")
+                    writeArray(params[i].string, vals, null)          
+                }
+                else {
+                    out.println("is a int")
+                    createArray(params[i].string, UINT, 1)
+                    int vals[] = new int[1]
+                    vals[0] = getIntConst(params[i].string)
+                    out.println("val: $(iu.makeString(vals[0]))")
+                    writeArray(params[i].string, null, vals)          
+                }
+            }
             OpenMemArea x = openMemoryAreas.get(params[i].string)
             ChandleWrapper memHandle = x.hand
             paramHandles[i] = memHandle.handle

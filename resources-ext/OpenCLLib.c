@@ -657,6 +657,7 @@ INSTRUCTION_DEF createProgram(FrameData* cframe) {
         if (CL_err != CL_SUCCESS) {
             size_t len;
             char buf[2048];
+            printf("CL_err = %d\n", CL_err);
             clGetProgramBuildInfo(progs[i], *(devices+i), CL_PROGRAM_BUILD_LOG, sizeof(buf), buf, &len);
             printf("%s\n",buf);
         }
@@ -728,7 +729,7 @@ INSTRUCTION_DEF runKernel(FrameData* cframe) {
     rawParam = api->getParamInt(cframe, 1);
     cl_command_queue queue = (cl_command_queue) rawParam;
 
-    uint64_t globalWorkers = 5;
+    uint64_t globalWorkers = 10;
     printf("im here\n");
 
     cl_int CL_err = CL_SUCCESS;

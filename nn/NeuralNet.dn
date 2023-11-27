@@ -1,4 +1,7 @@
-component provides nn.NeuralNet requires gpu.LogicalComputeDevice, data.IntUtil iu{ LogicalComputeDevice myDevice
+component provides nn.NeuralNet requires gpu.LogicalComputeDevice, io.Output out, data.DecUtil du, data.IntUtil iu, data.adt.List {
+
+    LogicalComputeDevice myDevice
+
     int inputSize
     int trainingSetSize
     int outputSize
@@ -10,9 +13,20 @@ component provides nn.NeuralNet requires gpu.LogicalComputeDevice, data.IntUtil 
     NeuralNet:NeuralNet() {
         myDevice = new LogicalComputeDevice()
         //load required programs
+        myDevice.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/randvect.cl", "randVect")
+        myDevice.createArray("A", FLOAT, 10)
+        String params[] = new String[2]
+        params[0] = new String("A")
+        params[1] = new String("const:3485729347592")
+        myDevice.runProgram("randVect", params, new List())
+        Vector result = myDevice.readArray("A")
+        dec res[] = result.fvalues
+        for (int i = 0; i < res.arrayLength; i++) {
+            out.println("$(du.makeString(res[i]))")
+        }
     }
     void NeuralNet:setInputVectorSize(int sz){
-        inputeSize = sz
+        inputSize = sz
     }
     void NeuralNet:setTrainingSetSize(int sz){
         trainingSetSize = sz
@@ -30,13 +44,13 @@ component provides nn.NeuralNet requires gpu.LogicalComputeDevice, data.IntUtil 
         trainingAlgo = algo
     }
     void NeuralNet:train(dec trainSet[][]){
-        myDevice.createMatrix("trainingMatrix", 1, 2, new int[2](inputeSize, trainingSetSize))
+        myDevice.createMatrix("trainingMatrix", 1, 2, new int[2](inputSize, trainingSetSize))
         myDevice.writeMatrix("trainingMatrix", trainSet, null)
 
         for (int i = 0; i < hiddenLayerSizes.arrayLength; i++) {
             if (i = 0) {
                 myDevice.createMatrix("w$(i)", 1, 2, new int[2](hiddenLayerSizes[i], inputSize))
-                myDevice.createArray("b$(i)", 1, inputeSize)
+                myDevice.createArray("b$(i)", 1, inputSize)
             }
             else {
                 myDevice.createMatrix("w$(i)", 1, 2, new int[2](hiddenLayerSizes[i], hiddenLayerSizes[i-1]))
@@ -50,6 +64,7 @@ component provides nn.NeuralNet requires gpu.LogicalComputeDevice, data.IntUtil 
     }
 
     dec[] NeuralNet:predict(dec vect[]){
+        return null
 
     }
     

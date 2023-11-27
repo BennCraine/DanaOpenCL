@@ -4,8 +4,19 @@
 uses data.String
 uses data.adt.Queue
 uses data.adt.List
+uses gpu.Compute
 
 const int RUN_KERNEL = 1
+
+data Vector {
+    int ivalues[]
+    dec fvalues[]
+}
+
+data Matrix {
+    int ivalues[][]
+    dec fvalues[][]
+}
 
 interface LogicalComputeDevice {
     LogicalComputeDevice()
@@ -17,10 +28,10 @@ interface LogicalComputeDevice {
     void destroyMatrix(char name[])
 
     void writeArray(char name[], dec fvalues[], int ivalues[])
-    int[] readArray(char name[])
+    Vector readArray(char name[])
 
     void writeMatrix(char name[], dec fvalues[][], int ivalues[][])
-    int[][] readMatrix(char name[])
+    Matrix readMatrix(char name[])
 
     void loadProgram(char path[], char name[])
     String[] getPrograms()

@@ -1,0 +1,7 @@
+component provides App requires nn.NeuralNet {
+
+    int App:main(AppParam params[]) { 
+        NeuralNet nn = new NeuralNet()
+        return 0
+    }
+}
