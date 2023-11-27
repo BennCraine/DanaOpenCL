@@ -1,6 +1,4 @@
-component provides nn.NeuralNet requires gpu.LogicalComputeDevice, data.IntUtil iu{
-    LogicalComputeDevice myDevice
-
+component provides nn.NeuralNet requires gpu.LogicalComputeDevice, data.IntUtil iu{ LogicalComputeDevice myDevice
     int inputSize
     int trainingSetSize
     int outputSize

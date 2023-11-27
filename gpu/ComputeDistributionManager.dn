@@ -36,7 +36,6 @@ component provides gpu.ComputeDistributionManager requires gpu.ComputeManager,
             ChandleWrapper e = physicalDevicesIDs.get(physicalDevices[i].string)
             int x = e.handle
         }
-        out.println("deviceIDs len: $(iu.makeString(deviceIDs.arrayLength))")
 
         //create opencl context with all devices available
         nat.createContext_w(deviceIDs)
