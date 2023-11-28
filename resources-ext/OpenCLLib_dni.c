@@ -145,7 +145,8 @@ static const DanaTypeField function_OpenCLLib_prepareKernel_fields[] = {
 {(DanaType*) &char_array_def, NULL, 0, 0, 40}};
 static const DanaTypeField function_OpenCLLib_runKernel_fields[] = {
 {(DanaType*) &void_def, NULL, 0, 0, 0},{(DanaType*) &int_def, NULL, 0, 0, 0},
-{(DanaType*) &int_def, NULL, 0, 0, 8}};
+{(DanaType*) &int_def, NULL, 0, 0, 8},
+{(DanaType*) &int_array_def, NULL, 0, 0, 16}};
 static const DanaType object_OpenCLLib_functions_spec[] = {
 {TYPE_FUNCTION, 0, 24, (DanaTypeField*) &function_OpenCLLib_clone_fields, 2},
 {TYPE_FUNCTION, 0, 24, (DanaTypeField*) &function_OpenCLLib_equals_fields, 2},
@@ -171,7 +172,7 @@ static const DanaType object_OpenCLLib_functions_spec[] = {
 {TYPE_FUNCTION, 0, 32, (DanaTypeField*) &function_OpenCLLib_writeFloatMatrix_fields, 4},
 {TYPE_FUNCTION, 0, 48, (DanaTypeField*) &function_OpenCLLib_readFloatMatrix_fields, 4},
 {TYPE_FUNCTION, 0, 56, (DanaTypeField*) &function_OpenCLLib_prepareKernel_fields, 5},
-{TYPE_FUNCTION, 0, 16, (DanaTypeField*) &function_OpenCLLib_runKernel_fields, 3}};
+{TYPE_FUNCTION, 0, 32, (DanaTypeField*) &function_OpenCLLib_runKernel_fields, 4}};
 static const DanaTypeField intf_functions_def[] = {
 {(DanaType*) &object_OpenCLLib_functions_spec[0], "clone", 5},
 {(DanaType*) &object_OpenCLLib_functions_spec[1], "equals", 6},
@@ -388,8 +389,8 @@ Interface* getPublicInterface(){
 ((VFrameHeader*) op_prepareKernel_thread_spec) -> sub = NULL;
 ((VFrameHeader*) op_prepareKernel_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[23];
 ((VFrameHeader*) op_prepareKernel_thread_spec) -> functionName = "prepareKernel";
-((VFrameHeader*) op_runKernel_thread_spec) -> frameSize = sizeof(VFrame) + sizeof(VVarR) + 16;
-((VFrameHeader*) op_runKernel_thread_spec) -> formalParamsCount = 2;
+((VFrameHeader*) op_runKernel_thread_spec) -> frameSize = sizeof(VFrame) + sizeof(VVarR) + 32;
+((VFrameHeader*) op_runKernel_thread_spec) -> formalParamsCount = 3;
 ((VFrameHeader*) op_runKernel_thread_spec) -> sub = NULL;
 ((VFrameHeader*) op_runKernel_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[24];
 ((VFrameHeader*) op_runKernel_thread_spec) -> functionName = "runKernel";

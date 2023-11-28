@@ -69,6 +69,9 @@ component provides LogicalComputeDevice requires gpu.Compute,
         ChandleWrapper deviceHandle = device.value
         char deviceName[] = device.key
         int clMemObj = nat.createMatrix_w(deviceHandle.handle, lengths[0], lengths[1], type)
+        out.println("----createMatrix----")
+        out.println("$(iu.makeString(clMemObj))")
+        out.println("--------------------")
         ChandleWrapper matrixHandle = new ChandleWrapper(clMemObj)
         OpenMemArea newMem = new OpenMemArea(matrixHandle, new String(deviceName), dim, lengths, type)
         openMemoryAreas.put(name, newMem)
@@ -255,8 +258,6 @@ component provides LogicalComputeDevice requires gpu.Compute,
     }
 
     void LogicalComputeDevice:loadProgram(char path[], char name[]) {
-        //TODO: remove comments and all \n chars
-        //TODO: build for all devices in this context
         TextFile source = new TextFile(path, File.READ)
         int sizeInBytes = source.getSize()
         char rawSource[]
@@ -312,30 +313,26 @@ component provides LogicalComputeDevice requires gpu.Compute,
         return iu.intFromString(exploded[1].string)
     }
 
-    void LogicalComputeDevice:runProgram(char program[], String params[], store List l) {
+    void LogicalComputeDevice:runProgram(char program[], String params[]) {
         ChandleWrapperArray arr = programs.get(program)
         ChandleWrapper progHandles[] = arr.array
 
         HashTable paramMap = new HashTable()
         
         int paramHandles[] = new int[params.arrayLength]
+        int outputDims[]
         for (int i = 0; i < params.arrayLength; i++) {
             if (isConst(params[i].string)) {
-                out.println("is a constant")
                 if (isFloat(params[i].string)) {
-                    out.println("is a float")
                     createArray(params[i].string, FLOAT, 1)
                     dec vals[] = new dec[1]
                     vals[0] = getDecConst(params[i].string)
-                    out.println("val: $(du.makeString(vals[0]))")
                     writeArray(params[i].string, vals, null)          
                 }
                 else {
-                    out.println("is a int")
                     createArray(params[i].string, UINT, 1)
                     int vals[] = new int[1]
                     vals[0] = getIntConst(params[i].string)
-                    out.println("val: $(iu.makeString(vals[0]))")
                     writeArray(params[i].string, null, vals)          
                 }
             }
@@ -344,10 +341,42 @@ component provides LogicalComputeDevice requires gpu.Compute,
             paramHandles[i] = memHandle.handle
             String device = x.device
             paramMap.put(params[i].string, device)
+
+            if (i == (params.arrayLength-1)) {
+                outputDims = x.lengths
+                if (outputDims.arrayLength == 2) {
+                    createArray("width", UINT, 1)
+                    createArray("height", UINT, 1)
+                    int width[] = new int[1]
+                    int height[] = new int[1]
+                    width[0] = x.lengths[0]
+                    height[0] = x.lengths[1]
+                    writeArray("width", null, width)
+                    writeArray("height", null, height)
+                    OpenMemArea widthInMem = openMemoryAreas.get("width")
+                    OpenMemArea heightInMem = openMemoryAreas.get("height")
+                    int extraParams[] = new int[2]
+                    ChandleWrapper widthHandle = widthInMem.hand
+                    ChandleWrapper heightHandle = heightInMem.hand
+                    out.println("without extra params gaaa")
+                    for(int j = 0; j < paramHandles.arrayLength; j++) {
+                        out.println("$(iu.makeString(paramHandles[j]))")
+                    }
+                    extraParams[0] = widthHandle.handle
+                    extraParams[1] = heightHandle.handle
+                    out.println("extra params:")
+                    out.println("$(extraParams[0])")
+                    out.println("$(extraParams[1])")
+                    paramHandles = new int[](dana.sub(paramHandles, 0, paramHandles.arrayLength-2), extraParams, dana.sub(paramHandles, paramHandles.arrayLength-1, paramHandles.arrayLength-1))
+                    out.println("extra params added boiiii")
+                    for(int j = 0; j < paramHandles.arrayLength; j++) {
+                        out.println("$(iu.makeString(paramHandles[j]))")
+                    }
+                }
+            }
         }
 
-        int paramCount = params.arrayLength
-        //choose which program handle to use or prepareKernel for all?
+        int paramCount = paramHandles.arrayLength
         ChandleWrapper kernelHandles[] = new ChandleWrapper[progHandles.arrayLength]
         int rawKerHandles[] = new int[progHandles.arrayLength]
         bool kerPrepSuccess[] = new bool[progHandles.arrayLength]
@@ -359,7 +388,7 @@ component provides LogicalComputeDevice requires gpu.Compute,
         ChandleWrapperArray kerArr = new ChandleWrapperArray(kernelHandles)
 
         //hand kernels over to distManager with a map describing which params are on which devices
-        distManager.execProgram(kerArr, paramMap)
+        distManager.execProgram(kerArr, paramMap, outputDims)
 
         return
     }

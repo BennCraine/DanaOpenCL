@@ -40,5 +40,5 @@ interface Compute {
     void writeFloatMatrix_w(int queue_cl, int memObj_cl, dec buf[][])
     dec[][] readFloatMatrix_w(int queue_cl, int memObj_cl, dec buf[][])
     int prepareKernel_w(int clProghandle, int paramHandles[], int paramCount, char program[])
-    void runKernel_w(int clKernel, int queue_cl)
+    void runKernel_w(int clKernel, int queue_cl, int outputDims[])
 }

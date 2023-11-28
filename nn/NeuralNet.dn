@@ -1,4 +1,4 @@
-component provides nn.NeuralNet requires gpu.LogicalComputeDevice, io.Output out, data.DecUtil du, data.IntUtil iu, data.adt.List {
+component provides nn.NeuralNet requires gpu.LogicalComputeDevice, io.Output out, data.DecUtil du, data.IntUtil iu, data.adt.List, time.Timer t{
 
     LogicalComputeDevice myDevice
 
@@ -13,16 +13,23 @@ component provides nn.NeuralNet requires gpu.LogicalComputeDevice, io.Output out
     NeuralNet:NeuralNet() {
         myDevice = new LogicalComputeDevice()
         //load required programs
-        myDevice.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/randvect.cl", "randVect")
-        myDevice.createArray("A", FLOAT, 10)
+        myDevice.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/randmat.cl", "randMat")
+        int dims[] = new int[2]
+        dims[0] = 10
+        dims[1] = 20
+        myDevice.createMatrix("A", FLOAT, 2, dims)
         String params[] = new String[2]
-        params[0] = new String("A")
-        params[1] = new String("const:3485729347592")
-        myDevice.runProgram("randVect", params, new List())
-        Vector result = myDevice.readArray("A")
-        dec res[] = result.fvalues
-        for (int i = 0; i < res.arrayLength; i++) {
-            out.println("$(du.makeString(res[i]))")
+        params[0] = new String("const:10")
+        params[1] = new String("A")
+        myDevice.runProgram("randMat", params)
+        t.sleep(10000) 
+        Matrix result = myDevice.readMatrix("A")
+        dec res[][] = result.fvalues
+        for (int i = 0; i < 10; i++) {
+            for (int j = 0; j < 20; j++) {
+                out.print("$(du.makeString(res[i][j]))|")
+            }
+            out.print("\n")
         }
     }
     void NeuralNet:setInputVectorSize(int sz){

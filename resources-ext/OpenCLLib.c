@@ -475,10 +475,12 @@ INSTRUCTION_DEF createMatrix(FrameData* cframe) {
     cl_image_desc desc = {CL_MEM_OBJECT_IMAGE2D, x_bytes, y_bytes, 0, 1, 0, 0, 0, 0, NULL};
     cl_image_format form;
     if (type == FLOAT) {
-        form = (cl_image_format) {CL_R, CL_FLOAT};
+        printf("creating float matrix\n");
+        printf("width: %lu | height: %lu", x_bytes, y_bytes);
+        form = (cl_image_format) {CL_INTENSITY, CL_FLOAT};
     }
     else if (type == UINT) {
-        form = (cl_image_format) {CL_R, CL_UNSIGNED_INT32};
+        form = (cl_image_format) {CL_INTENSITY, CL_UNSIGNED_INT32};
     }
     else {
         api->returnInt(cframe, (uint64_t) 0);
@@ -658,7 +660,7 @@ INSTRUCTION_DEF createProgram(FrameData* cframe) {
             size_t len;
             char buf[2048];
             printf("CL_err = %d\n", CL_err);
-            clGetProgramBuildInfo(progs[i], *(devices+i), CL_PROGRAM_BUILD_LOG, sizeof(buf), buf, &len);
+            clGetProgramBuildInfo(progs[i], **(devices+i), CL_PROGRAM_BUILD_LOG, sizeof(buf), buf, &len);
             printf("%s\n",buf);
         }
     }
@@ -678,6 +680,8 @@ INSTRUCTION_DEF prepareKernel(FrameData* cframe) {
     cl_program program = (cl_program) rawParam;
     rawParam = api->getParamInt(cframe, 2);
     size_t paramCount = (size_t) rawParam;
+
+    printf("param count: %lu\n", paramCount);
 
     DanaEl* paramArray = api->getParamEl(cframe, 1);
     cl_mem* rawParamArray = (cl_mem*) malloc(sizeof(cl_mem)*paramCount);
@@ -707,7 +711,8 @@ INSTRUCTION_DEF prepareKernel(FrameData* cframe) {
     CL_err = CL_SUCCESS;
     rawParamArrayCpy = rawParamArray;
     for (int i = 0; i < paramCount; i++) {
-        CL_err = clSetKernelArg(kernel, i, sizeof(uint64_t), rawParamArrayCpy);
+        printf("param in C: %lu\n", *rawParamArrayCpy);
+        CL_err = clSetKernelArg(kernel, i, sizeof(cl_mem), rawParamArrayCpy);
         if (CL_err != CL_SUCCESS) {
             printf("issue with kernel args: %d\n", CL_err);
             api->returnInt(cframe, (uint64_t) 0);
@@ -728,14 +733,22 @@ INSTRUCTION_DEF runKernel(FrameData* cframe) {
     cl_kernel kernel = (cl_kernel) rawParam;
     rawParam = api->getParamInt(cframe, 1);
     cl_command_queue queue = (cl_command_queue) rawParam;
+    DanaEl* rawParamArr = api->getParamEl(cframe, 2);
 
-    uint64_t globalWorkers = 10;
+    size_t rawArrLen = api->getArrayLength(rawParamArr);
+    printf("rawArray Len: %lu\n", rawArrLen);
+    
+    uint64_t* globalWorkers = (uint64_t*) malloc(sizeof(uint64_t)*rawArrLen);
+    for(int i = 0; i < rawArrLen; i++) {
+        *(globalWorkers+i) = api->getArrayCellInt(rawParamArr, i);
+        printf("global worker dim %d: %lu\n", i, *(globalWorkers+i));
+    }
     printf("im here\n");
 
     cl_int CL_err = CL_SUCCESS;
-    CL_err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &globalWorkers, NULL, 0, NULL, NULL);
+    CL_err = clEnqueueNDRangeKernel(queue, kernel, rawArrLen, NULL, globalWorkers, NULL, 0, NULL, NULL);
     if (CL_err != CL_SUCCESS) {
-        printf("error execing kernel");
+        printf("error execing kernel: %d\n", CL_err);
     }
 
     return RETURN_OK;

@@ -21,7 +21,7 @@ interface OpenCLLib {
     void writeFloatMatrix(int queue_cl, int memObj_cl, dec buf[][])
     dec[][] readFloatMatrix(int queue_cl, int memObj_cl, dec buf[][])
     int prepareKernel(int clProghandle, int paramHandles[], int paramCount, char program[])
-    void runKernel(int clKernel, int queue_cl)
+    void runKernel(int clKernel, int queue_cl, int outputDims[])
 }
 
 component provides gpu.Compute requires native OpenCLLib lib, 
@@ -113,7 +113,7 @@ component provides gpu.Compute requires native OpenCLLib lib,
     int Compute:prepareKernel_w(int clProghandle, int paramHandles[], int paramCount, char program[]) {
         return lib.prepareKernel(clProghandle, paramHandles, paramCount, program)
     }
-    void Compute:runKernel_w(int clKernel, int queue_cl) {
-        lib.runKernel(clKernel, queue_cl)
+    void Compute:runKernel_w(int clKernel, int queue_cl, int outputDims[]) {
+        lib.runKernel(clKernel, queue_cl, outputDims)
     }
 }

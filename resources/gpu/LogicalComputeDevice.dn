@@ -35,5 +35,5 @@ interface LogicalComputeDevice {
 
     void loadProgram(char path[], char name[])
     String[] getPrograms()
-    void runProgram(char program[], String params[], store List l)
+    void runProgram(char program[], String params[])
 }

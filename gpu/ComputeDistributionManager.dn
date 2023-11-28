@@ -70,7 +70,7 @@ component provides gpu.ComputeDistributionManager requires gpu.ComputeManager,
         return null
     }
 
-    void ComputeDistributionManager:execProgram(ChandleWrapperArray kernelHandles, HashTable memoryObjects) {
+    void ComputeDistributionManager:execProgram(ChandleWrapperArray kernelHandles, HashTable memoryObjects, int outputDims[]) {
         HashTableItem memObjs[] = memoryObjects.getContents()
 
         ChandleWrapper kernelHandlesArr[] = kernelHandles.array
@@ -88,6 +88,7 @@ component provides gpu.ComputeDistributionManager requires gpu.ComputeManager,
             }
         }
 
+        out.println("outDim: $(iu.makeString(outputDims[0]))")
         int succCount = 0 
         int kerIndex = 0
         int kerToExec = 0
@@ -104,7 +105,7 @@ component provides gpu.ComputeDistributionManager requires gpu.ComputeManager,
             ChandleWrapper devIdWrap = physicalDevicesIDs.get(device.string)
             int dev = devIdWrap.handle
             ComputeQueue q = getQueueByDevice(dev)
-            nat.runKernel_w(kerToExec, q.queue_cl)
+            nat.runKernel_w(kerToExec, q.queue_cl, outputDims)
         }
         else if (succCount == 0) {
 
