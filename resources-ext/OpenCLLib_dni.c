@@ -121,7 +121,7 @@ static const DanaTypeField function_OpenCLLib_writeFloatArray_fields[] = {
 static const DanaTypeField function_OpenCLLib_readFloatArray_fields[] = {
 {(DanaType*) &dec_array_def, NULL, 0, 0, 0},{(DanaType*) &int_def, NULL, 0, 0, 16},
 {(DanaType*) &int_def, NULL, 0, 0, 24},
-{(DanaType*) &dec_array_def, NULL, 0, 0, 32}};
+{(DanaType*) &int_def, NULL, 0, 0, 32}};
 static const DanaTypeField function_OpenCLLib_writeIntMatrix_fields[] = {
 {(DanaType*) &void_def, NULL, 0, 0, 0},{(DanaType*) &int_def, NULL, 0, 0, 0},
 {(DanaType*) &int_def, NULL, 0, 0, 8},
@@ -166,7 +166,7 @@ static const DanaType object_OpenCLLib_functions_spec[] = {
 {TYPE_FUNCTION, 0, 32, (DanaTypeField*) &function_OpenCLLib_writeIntArray_fields, 4},
 {TYPE_FUNCTION, 0, 48, (DanaTypeField*) &function_OpenCLLib_readIntArray_fields, 4},
 {TYPE_FUNCTION, 0, 32, (DanaTypeField*) &function_OpenCLLib_writeFloatArray_fields, 4},
-{TYPE_FUNCTION, 0, 48, (DanaTypeField*) &function_OpenCLLib_readFloatArray_fields, 4},
+{TYPE_FUNCTION, 0, 40, (DanaTypeField*) &function_OpenCLLib_readFloatArray_fields, 4},
 {TYPE_FUNCTION, 0, 32, (DanaTypeField*) &function_OpenCLLib_writeIntMatrix_fields, 4},
 {TYPE_FUNCTION, 0, 48, (DanaTypeField*) &function_OpenCLLib_readIntMatrix_fields, 4},
 {TYPE_FUNCTION, 0, 32, (DanaTypeField*) &function_OpenCLLib_writeFloatMatrix_fields, 4},
@@ -359,7 +359,7 @@ Interface* getPublicInterface(){
 ((VFrameHeader*) op_writeFloatArray_thread_spec) -> sub = NULL;
 ((VFrameHeader*) op_writeFloatArray_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[17];
 ((VFrameHeader*) op_writeFloatArray_thread_spec) -> functionName = "writeFloatArray";
-((VFrameHeader*) op_readFloatArray_thread_spec) -> frameSize = sizeof(VFrame) + sizeof(VVarR) + 48;
+((VFrameHeader*) op_readFloatArray_thread_spec) -> frameSize = sizeof(VFrame) + sizeof(VVarR) + 40;
 ((VFrameHeader*) op_readFloatArray_thread_spec) -> formalParamsCount = 3;
 ((VFrameHeader*) op_readFloatArray_thread_spec) -> sub = NULL;
 ((VFrameHeader*) op_readFloatArray_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[18];

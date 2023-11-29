@@ -79,7 +79,6 @@ component provides gpu.ComputeDistributionManager requires gpu.ComputeManager,
 
         for (int i = 0; i < rawKerHandles.arrayLength; i++) {
             rawKerHandles[i] = kernelHandlesArr[i].handle
-            out.println("raw kernel: $(iu.makeString(rawKerHandles[i]))")
             if (rawKerHandles[i] != 0) {
                 kerPrepSuccess[i] = true
             }
@@ -88,7 +87,6 @@ component provides gpu.ComputeDistributionManager requires gpu.ComputeManager,
             }
         }
 
-        out.println("outDim: $(iu.makeString(outputDims[0]))")
         int succCount = 0 
         int kerIndex = 0
         int kerToExec = 0
@@ -99,7 +97,6 @@ component provides gpu.ComputeDistributionManager requires gpu.ComputeManager,
             }
         }
         if (succCount == 1) {
-            out.println("execing kernel")
             kerToExec = rawKerHandles[kerIndex]
             String device = memObjs[0].value
             ChandleWrapper devIdWrap = physicalDevicesIDs.get(device.string)

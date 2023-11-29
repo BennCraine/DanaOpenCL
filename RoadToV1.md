@@ -10,8 +10,9 @@
 - [x] Seperate float/int type vectors/matricies
 - [ ] Make native library OS agnostic <br>
 - [ ] Add a fallback incase OpenCL dependancy not satisfied by users system <br>
-- [ ] Automate the task of how the kernel will be executed on the physical devices archutecture, i.e. work units <br>
+- [x] Automate the task of how the kernel will be executed on the physical devices archutecture, i.e. work units <br>
 - [ ] Add a verbose error management system
+- [ ] Rewrite read vectors / matrix function, see 'readFloatArray' for ref
 
 **Beyond V1** <br>
 - [ ] Linear algebra library <br>

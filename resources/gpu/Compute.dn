@@ -34,7 +34,7 @@ interface Compute {
     void writeIntArray_w(int queue_cl, int memObj_cl, int values[])
     int[] readIntArray_w(int queue_cl, int memObj_cl, int buf[])
     void writeFloatArray_w(int queue_cl, int memObj_cl, dec values[])
-    dec[] readFloatArray_w(int queue_cl, int memObj_cl, dec buf[])
+    dec[] readFloatArray_w(int queue_cl, int memObj_cl, int len)
     void writeIntMatrix_w(int queue_cl, int memObj_cl, int buf[][])
     int[][] readIntMatrix_w(int queue_cl, int memObj_cl, int buf[][])
     void writeFloatMatrix_w(int queue_cl, int memObj_cl, dec buf[][])

@@ -2,6 +2,21 @@ component provides App requires nn.NeuralNet {
 
     int App:main(AppParam params[]) { 
         NeuralNet nn = new NeuralNet()
+        nn.setInputVectorSize(784)
+        nn.setTrainingSetSize(1000)
+        nn.setOutputVectorSize(10)
+        nn.setHiddenLayerSizes(new int[](16, 16))
+        nn.setTrainingAlgo(BACK_PROP)
+
+        dec trainSet[][] = new dec[1000][784]
+        for (int i = 0; i < 1000; i++) {
+            for (int k = 0; k < 784; k++) {
+                trainSet[i][k] = 20.0
+            }
+        }
+        
+        nn.train(trainSet)
+
         return 0
     }
 }

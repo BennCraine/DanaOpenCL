@@ -14,23 +14,9 @@ component provides nn.NeuralNet requires gpu.LogicalComputeDevice, io.Output out
         myDevice = new LogicalComputeDevice()
         //load required programs
         myDevice.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/randmat.cl", "randMat")
-        int dims[] = new int[2]
-        dims[0] = 10
-        dims[1] = 20
-        myDevice.createMatrix("A", FLOAT, 2, dims)
-        String params[] = new String[2]
-        params[0] = new String("const:10")
-        params[1] = new String("A")
-        myDevice.runProgram("randMat", params)
-        t.sleep(10000) 
-        Matrix result = myDevice.readMatrix("A")
-        dec res[][] = result.fvalues
-        for (int i = 0; i < 10; i++) {
-            for (int j = 0; j < 20; j++) {
-                out.print("$(du.makeString(res[i][j]))|")
-            }
-            out.print("\n")
-        }
+        myDevice.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/randvect.cl", "randVect")
+        myDevice.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/weightedSum.cl", "weightedSum")
+        myDevice.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/relu.cl", "relu")
     }
     void NeuralNet:setInputVectorSize(int sz){
         inputSize = sz
@@ -51,28 +37,100 @@ component provides nn.NeuralNet requires gpu.LogicalComputeDevice, io.Output out
         trainingAlgo = algo
     }
     void NeuralNet:train(dec trainSet[][]){
-        myDevice.createMatrix("trainingMatrix", 1, 2, new int[2](inputSize, trainingSetSize))
+        myDevice.createMatrix("trainingMatrix", FLOAT, 2, new int[](inputSize, trainingSetSize))
         myDevice.writeMatrix("trainingMatrix", trainSet, null)
 
-        for (int i = 0; i < hiddenLayerSizes.arrayLength; i++) {
-            if (i = 0) {
-                myDevice.createMatrix("w$(i)", 1, 2, new int[2](hiddenLayerSizes[i], inputSize))
-                myDevice.createArray("b$(i)", 1, inputSize)
-            }
-            else {
-                myDevice.createMatrix("w$(i)", 1, 2, new int[2](hiddenLayerSizes[i], hiddenLayerSizes[i-1]))
-                myDevice.createArray("b$(i)", 1, hiddenLayerSizes[i-1])
+        //init random weights and biases
+        //create arrays to store activations
+        if (hiddenLayerSizes != null) {
+            for (int i = 0; i < hiddenLayerSizes.arrayLength; i++) {
+                if (i == 0) {
+                    myDevice.createMatrix("w$(i)", FLOAT, 2, new int[](hiddenLayerSizes[i], inputSize))
+                    String progParams[] = new String[](new String("const:10"), new String("w$(i)"))
+                    myDevice.runProgram("randMat", progParams)
+
+                    myDevice.createArray("b$(i)", FLOAT, inputSize)
+                    progParams = new String[](new String("const:20"), new String("b$(i)"))
+                    myDevice.runProgram("randVect", progParams)
+
+                    myDevice.createArray("a$(i)", FLOAT, hiddenLayerSizes[i])
+                }
+                else {
+                    myDevice.createMatrix("w$(i)", FLOAT, 2, new int[](hiddenLayerSizes[i], hiddenLayerSizes[i-1]))
+                    String progParams[] = new String[](new String("const:10"), new String("w$(i)"))
+                    myDevice.runProgram("randMat", progParams)
+
+                    myDevice.createArray("b$(i)", FLOAT, hiddenLayerSizes[i-1])
+                    progParams = new String[](new String("const:20"), new String("b$(i)"))
+                    myDevice.runProgram("randVect", progParams)
+
+                    myDevice.createArray("a$(i)", FLOAT, hiddenLayerSizes[i])
+                }
             }
         }
+        else {
+            myDevice.createMatrix("w0", FLOAT, 2, new int[](outputSize, inputSize))
+            String progParams[] = new String[](new String("const:10"), new String("w0"))
+            myDevice.runProgram("randMat", progParams)
 
-        myDevice.createArray("output", 1, outputSize)
+            myDevice.createArray("b0", FLOAT, inputSize)
+            progParams = new String[](new String("const:20"), new String("b0"))
+            myDevice.runProgram("randVect", progParams)
 
-        
+            myDevice.createArray("a0", FLOAT, outputSize)
+        }
+
+        myDevice.createArray("output", FLOAT, outputSize)
+
+        //for each column in training set, forward prop then back prop
+        for (int i = 0; i < trainingSetSize; i++) {
+            myDevice.createArray("i$(i)", FLOAT, inputSize)
+            myDevice.writeArray("i$(i)", trainSet[i], null)
+
+            //forward prop
+            for (int k = 0; k < hiddenLayerSizes.arrayLength; k++) {
+                String programParams[]
+                if (k == 0) {
+                    programParams = new String[](new String("i$(i)"), new String("w$(k)"), new String("b$(k)"), new String("a$(k)"))
+                }
+                else {
+                    programParams = new String[](new String("a$(k-1)"), new String("w$(k)"), new String("b$(k)"), new String("a$(k)"))
+                }
+                myDevice.runProgram("weightedSum", programParams)
+
+                programParams = new String[](new String("a$(k)"))
+                myDevice.runProgram("relu", programParams)
+            }
+
+            int k = hiddenLayerSizes.arrayLength
+            String programParams[]
+            if (hiddenLayerSizes.arrayLength == 0) {
+                programParams = new String[](new String("i$(i)"), new String("w$(k)"), new String("b$(k)"), new String("output"))
+            }
+            else {
+                programParams = new String[](new String("a$(k-1)"), new String("w$(k-1)"), new String("b$(k-1)"), new String("output"))
+            }
+            myDevice.runProgram("weightedSum", programParams)
+
+            programParams = new String[](new String("output"))
+            myDevice.runProgram("relu", programParams)
+
+            Vector outVect = myDevice.readArray("output")
+            dec outDec[] = outVect.fvalues
+
+            out.println("output of the network: ")
+            for (int l = 0; l < outputSize; l++) {
+                out.println("| $(du.makeString(outDec[l])) | ")
+            }
+
+            //calculate cost
+
+            //back prop
+        }
     }
 
     dec[] NeuralNet:predict(dec vect[]){
         return null
-
     }
     
 }

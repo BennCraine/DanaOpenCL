@@ -437,22 +437,23 @@ INSTRUCTION_DEF readFloatArray(FrameData* cframe) {
     rawParam = api->getParamInt(cframe, 1);
     cl_mem memObj = (cl_mem) rawParam;
 
-    DanaEl* hostArray = api->getParamEl(cframe, 2);
-    size_t hostArrayLen = api->getArrayLength(hostArray);
+    size_t hostArrayLen = api->getParamInt(cframe, 2);
 
-    double_t* rawHostArray = (double_t*) api->getArrayContent(hostArray);
+    cl_double* fromDevice = (cl_double*) malloc(sizeof(cl_double)*hostArrayLen);
 
-    cl_int CL_err = clEnqueueReadBuffer(queue, memObj, CL_TRUE, 0, hostArrayLen*sizeof(double_t), rawHostArray, NULL, NULL, NULL);
+    cl_int CL_err = clEnqueueReadBuffer(queue, memObj, CL_TRUE, 0, hostArrayLen*sizeof(cl_double), fromDevice, NULL, NULL, NULL);
     if (CL_err != CL_SUCCESS) {
         printf("error in read buffer");
     }
 
+
+    DanaEl* danaArr = api->makeArray(decArrayGT, hostArrayLen, NULL);
     for (int i = 0; i < hostArrayLen; i++) {
-        api->setArrayCellDec(hostArray, i, *rawHostArray);
-        rawHostArray++;
+        api->setArrayCellDec(danaArr, i, *fromDevice);
+        fromDevice++;
     }
 
-    api->returnEl(cframe, hostArray);
+    api->returnEl(cframe, danaArr);
 
     return RETURN_OK;    
 }
@@ -475,8 +476,6 @@ INSTRUCTION_DEF createMatrix(FrameData* cframe) {
     cl_image_desc desc = {CL_MEM_OBJECT_IMAGE2D, x_bytes, y_bytes, 0, 1, 0, 0, 0, 0, NULL};
     cl_image_format form;
     if (type == FLOAT) {
-        printf("creating float matrix\n");
-        printf("width: %lu | height: %lu", x_bytes, y_bytes);
         form = (cl_image_format) {CL_INTENSITY, CL_FLOAT};
     }
     else if (type == UINT) {
@@ -681,8 +680,6 @@ INSTRUCTION_DEF prepareKernel(FrameData* cframe) {
     rawParam = api->getParamInt(cframe, 2);
     size_t paramCount = (size_t) rawParam;
 
-    printf("param count: %lu\n", paramCount);
-
     DanaEl* paramArray = api->getParamEl(cframe, 1);
     cl_mem* rawParamArray = (cl_mem*) malloc(sizeof(cl_mem)*paramCount);
     cl_mem* rawParamArrayCpy = rawParamArray;
@@ -692,7 +689,6 @@ INSTRUCTION_DEF prepareKernel(FrameData* cframe) {
     }
 
     char* progName = x_getParam_char_array(api, cframe, 3);
-    printf("progname: %s\n", progName);
 
     cl_int CL_err = CL_SUCCESS;
     cl_kernel kernel = clCreateKernel(program, progName, &CL_err);
@@ -711,7 +707,6 @@ INSTRUCTION_DEF prepareKernel(FrameData* cframe) {
     CL_err = CL_SUCCESS;
     rawParamArrayCpy = rawParamArray;
     for (int i = 0; i < paramCount; i++) {
-        printf("param in C: %lu\n", *rawParamArrayCpy);
         CL_err = clSetKernelArg(kernel, i, sizeof(cl_mem), rawParamArrayCpy);
         if (CL_err != CL_SUCCESS) {
             printf("issue with kernel args: %d\n", CL_err);
@@ -736,14 +731,11 @@ INSTRUCTION_DEF runKernel(FrameData* cframe) {
     DanaEl* rawParamArr = api->getParamEl(cframe, 2);
 
     size_t rawArrLen = api->getArrayLength(rawParamArr);
-    printf("rawArray Len: %lu\n", rawArrLen);
     
     uint64_t* globalWorkers = (uint64_t*) malloc(sizeof(uint64_t)*rawArrLen);
     for(int i = 0; i < rawArrLen; i++) {
         *(globalWorkers+i) = api->getArrayCellInt(rawParamArr, i);
-        printf("global worker dim %d: %lu\n", i, *(globalWorkers+i));
     }
-    printf("im here\n");
 
     cl_int CL_err = CL_SUCCESS;
     CL_err = clEnqueueNDRangeKernel(queue, kernel, rawArrLen, NULL, globalWorkers, NULL, 0, NULL, NULL);

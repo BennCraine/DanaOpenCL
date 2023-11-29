@@ -15,7 +15,7 @@ interface OpenCLLib {
     void writeIntArray(int queue_cl, int memObj_cl, int values[])
     int[] readIntArray(int queue_cl, int memObj_cl, int buf[])
     void writeFloatArray(int queue_cl, int memObj_cl, dec values[])
-    dec[] readFloatArray(int queue_cl, int memObj_cl, dec buf[])
+    dec[] readFloatArray(int queue_cl, int memObj_cl, int len)
     void writeIntMatrix(int queue_cl, int memObj_cl, int buf[][])
     int[][] readIntMatrix(int queue_cl, int memObj_cl, int buf[][])
     void writeFloatMatrix(int queue_cl, int memObj_cl, dec buf[][])
@@ -95,8 +95,8 @@ component provides gpu.Compute requires native OpenCLLib lib,
     void Compute:writeFloatArray_w(int queue_cl, int memObj_cl, dec values[]) {
         lib.writeFloatArray(queue_cl, memObj_cl, values)
     }
-    dec[] Compute:readFloatArray_w(int queue_cl, int memObj_cl, dec buf[]) {
-        return lib.readFloatArray(queue_cl, memObj_cl, buf)
+    dec[] Compute:readFloatArray_w(int queue_cl, int memObj_cl, int len) {
+        return lib.readFloatArray(queue_cl, memObj_cl, len)
     }
     void Compute:writeIntMatrix_w(int queue_cl, int memObj_cl, int buf[][]) {
         lib.writeIntMatrix(queue_cl, memObj_cl, buf)

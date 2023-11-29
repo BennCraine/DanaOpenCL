@@ -57,9 +57,7 @@ component provides LogicalComputeDevice requires gpu.Compute,
         ChandleWrapper arrayHandle = new ChandleWrapper(clMemObj)
         int lengths[] = new int[1]
         lengths[0] = length
-        out.println("creating array with type: $(iu.makeString(types))")
         OpenMemArea newMem = new OpenMemArea(arrayHandle, new String(deviceName), 1, lengths, types)
-        out.println("Array Name: $(name)")
         openMemoryAreas.put(name, newMem)
         return 
     }
@@ -69,9 +67,6 @@ component provides LogicalComputeDevice requires gpu.Compute,
         ChandleWrapper deviceHandle = device.value
         char deviceName[] = device.key
         int clMemObj = nat.createMatrix_w(deviceHandle.handle, lengths[0], lengths[1], type)
-        out.println("----createMatrix----")
-        out.println("$(iu.makeString(clMemObj))")
-        out.println("--------------------")
         ChandleWrapper matrixHandle = new ChandleWrapper(clMemObj)
         OpenMemArea newMem = new OpenMemArea(matrixHandle, new String(deviceName), dim, lengths, type)
         openMemoryAreas.put(name, newMem)
@@ -81,11 +76,6 @@ component provides LogicalComputeDevice requires gpu.Compute,
     void LogicalComputeDevice:writeArray(char name[], dec fvalues[], int ivalues[]) {
         //get memObj from HashTable
         OpenMemArea inMem = openMemoryAreas.get(name)
-
-        out.println("arr type: $(iu.makeString(inMem.type))")
-        out.println("arr type: $(FLOAT)")
-
-
         ChandleWrapper hand = inMem.hand
         int clMemObj = hand.handle
 
@@ -96,11 +86,9 @@ component provides LogicalComputeDevice requires gpu.Compute,
         int clQueue = q.queue_cl
 
         if (inMem.type == FLOAT && ivalues == null && fvalues.arrayLength == inMem.lengths[0]) {
-            out.println("writing dec arr")
             nat.writeFloatArray_w(clQueue, clMemObj, fvalues)
         }
         else if (inMem.type == UINT && fvalues == null && ivalues.arrayLength == inMem.lengths[0]) {
-            out.println("writing int arr")
             nat.writeIntArray_w(clQueue, clMemObj, ivalues) 
         }
         else {
@@ -122,7 +110,7 @@ component provides LogicalComputeDevice requires gpu.Compute,
         if (inMem.type == FLOAT) {
             dec buf[] = new dec[inMem.lengths[0]]
 
-            buf = nat.readFloatArray_w(clQueue, clMemObj, buf)
+            buf = nat.readFloatArray_w(clQueue, clMemObj, inMem.lengths[0])
             v.fvalues = buf
             v.ivalues = null
             return v
@@ -337,6 +325,7 @@ component provides LogicalComputeDevice requires gpu.Compute,
                 }
             }
             OpenMemArea x = openMemoryAreas.get(params[i].string)
+            out.println(params[i].string)
             ChandleWrapper memHandle = x.hand
             paramHandles[i] = memHandle.handle
             String device = x.device
@@ -344,35 +333,6 @@ component provides LogicalComputeDevice requires gpu.Compute,
 
             if (i == (params.arrayLength-1)) {
                 outputDims = x.lengths
-                if (outputDims.arrayLength == 2) {
-                    createArray("width", UINT, 1)
-                    createArray("height", UINT, 1)
-                    int width[] = new int[1]
-                    int height[] = new int[1]
-                    width[0] = x.lengths[0]
-                    height[0] = x.lengths[1]
-                    writeArray("width", null, width)
-                    writeArray("height", null, height)
-                    OpenMemArea widthInMem = openMemoryAreas.get("width")
-                    OpenMemArea heightInMem = openMemoryAreas.get("height")
-                    int extraParams[] = new int[2]
-                    ChandleWrapper widthHandle = widthInMem.hand
-                    ChandleWrapper heightHandle = heightInMem.hand
-                    out.println("without extra params gaaa")
-                    for(int j = 0; j < paramHandles.arrayLength; j++) {
-                        out.println("$(iu.makeString(paramHandles[j]))")
-                    }
-                    extraParams[0] = widthHandle.handle
-                    extraParams[1] = heightHandle.handle
-                    out.println("extra params:")
-                    out.println("$(extraParams[0])")
-                    out.println("$(extraParams[1])")
-                    paramHandles = new int[](dana.sub(paramHandles, 0, paramHandles.arrayLength-2), extraParams, dana.sub(paramHandles, paramHandles.arrayLength-1, paramHandles.arrayLength-1))
-                    out.println("extra params added boiiii")
-                    for(int j = 0; j < paramHandles.arrayLength; j++) {
-                        out.println("$(iu.makeString(paramHandles[j]))")
-                    }
-                }
             }
         }
 
