@@ -10,8 +10,8 @@ component provides nn.NeuralNet requires gpu.LogicalComputeDevice, io.Output out
     int activationMethod
     int trainingAlgo
 
-    NeuralNet:NeuralNet() {
-        myDevice = new LogicalComputeDevice()
+    NeuralNet:NeuralNet(store LogicalComputeDevice dev) {
+        myDevice = dev
         //load required programs
         myDevice.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/randmat.cl", "randMat")
         myDevice.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/randvect.cl", "randVect")

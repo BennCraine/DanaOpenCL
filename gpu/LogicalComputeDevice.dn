@@ -67,6 +67,7 @@ component provides LogicalComputeDevice requires gpu.Compute,
         ChandleWrapper deviceHandle = device.value
         char deviceName[] = device.key
         int clMemObj = nat.createMatrix_w(deviceHandle.handle, lengths[0], lengths[1], type)
+        out.println("lens: $(lengths[0]), $(lengths[1])")
         ChandleWrapper matrixHandle = new ChandleWrapper(clMemObj)
         OpenMemArea newMem = new OpenMemArea(matrixHandle, new String(deviceName), dim, lengths, type)
         openMemoryAreas.put(name, newMem)
@@ -135,14 +136,15 @@ component provides LogicalComputeDevice requires gpu.Compute,
         ComputeQueue q = writeQueues.get(device.string)
         int clQueue = q.queue_cl
 
-        if (inMem.type == FLOAT && ivalues == null && fvalues[0].arrayLength == inMem.lengths[0] && fvalues[1].arrayLength == inMem.lengths[1]) {
+        if (inMem.type == FLOAT && ivalues == null && fvalues.arrayLength == inMem.lengths[0] && fvalues[1].arrayLength == inMem.lengths[1]) {
             nat.writeFloatMatrix_w(clQueue, memObj, fvalues) 
         }
-        else if (inMem.type == UINT && fvalues == null && ivalues[0].arrayLength == inMem.lengths[0] && ivalues[1].arrayLength == inMem.lengths[1]) {
+        else if (inMem.type == UINT && fvalues == null && ivalues.arrayLength == inMem.lengths[0] && ivalues[1].arrayLength == inMem.lengths[1]) {
             nat.writeIntMatrix_w(clQueue, memObj, ivalues) 
         }
         else {
             out.println("Err in LDC write matrix")
+            out.println("lens later: $(ivalues[0].arrayLength), $(ivalues[1].arrayLength)")
         }
     }
 

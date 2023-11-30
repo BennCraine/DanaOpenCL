@@ -127,6 +127,8 @@ opencl:
 	dnc ./gpu/ComputeDistributionManager.dn
 	dnc ./gpu/LogicalComputeDevice.dn
 	dnc ./nn/NeuralNet.dn
+	dnc ./dataprocessing/TypeConversion.dn
+	dnc ./dataprocessing/Normalisation.dn
 	$(CC) -O -s ./resources-ext/OpenCLLib_dni.c $(API_PATH)/vmi_util.c ./resources-ext/OpenCLLib.c -o OpenCLLib[$(PLATFORM).$(CHIP)].dnl -lOpenCL $(STD_INCLUDE) $(CCFLAGS)
 	$(CP_CMD) OpenCLLib[$(PLATFORM).$(CHIP)].dnl "./resources-ext/"
 	rm OpenCLLib[$(PLATFORM).$(CHIP)].dnl

@@ -96,6 +96,7 @@ component provides gpu.ComputeDistributionManager requires gpu.ComputeManager,
                 kerIndex = k
             }
         }
+        out.println("Succ count: $(succCount)")
         if (succCount == 1) {
             kerToExec = rawKerHandles[kerIndex]
             String device = memObjs[0].value
@@ -108,7 +109,12 @@ component provides gpu.ComputeDistributionManager requires gpu.ComputeManager,
 
         }
         else { //succCount > 1
-
+            kerToExec = rawKerHandles[kerIndex]
+            String device = memObjs[0].value
+            ChandleWrapper devIdWrap = physicalDevicesIDs.get(device.string)
+            int dev = devIdWrap.handle
+            ComputeQueue q = getQueueByDevice(dev)
+            nat.runKernel_w(kerToExec, q.queue_cl, outputDims)
         }
         return
     }

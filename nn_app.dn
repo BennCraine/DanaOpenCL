@@ -1,17 +1,35 @@
-component provides App requires nn.NeuralNet {
+component provides App requires gpu.LogicalComputeDevice, nn.NeuralNet, io.File, data.csv.CSVParser parse, io.Output out, data.IntUtil iu, dataprocessing.TypeConversion, dataprocessing.Normalisation, data.DecUtil du{
 
     int App:main(AppParam params[]) { 
-        NeuralNet nn = new NeuralNet()
-        nn.setInputVectorSize(784)
-        nn.setTrainingSetSize(1000)
+        LogicalComputeDevice dev = new LogicalComputeDevice()
+        
+        NeuralNet nn = new NeuralNet(dev)
+        TypeConversion tc = new TypeConversion(dev)
+        Normalisation norm = new Normalisation(dev)
+
+        nn.setInputVectorSize(785)
+        nn.setTrainingSetSize(100)
         nn.setOutputVectorSize(10)
         nn.setHiddenLayerSizes(new int[](16, 16))
         nn.setTrainingAlgo(BACK_PROP)
 
-        dec trainSet[][] = new dec[1000][784]
-        for (int i = 0; i < 1000; i++) {
-            for (int k = 0; k < 784; k++) {
-                trainSet[i][k] = 20.0
+        dec trainSet[][]
+        int iTrainSet[][]
+
+        File fd = new File("/home/ben/Documents/PhD/Datasets/mnist/mnist_train.csv", File.READ)
+        iTrainSet = parse.parseDocumentI(fd, true, new char[](","), 785, 100) 
+        for (int i = 0; i < 100; i++) {
+            out.println("$(i) | $(iu.makeString(iTrainSet[i][0]))")
+        }
+
+        trainSet = tc.intToDecMatrix(iTrainSet)
+        trainSet = norm.matrixDivision(trainSet, 255)
+
+        for(int i = 0; i < 100; i++) {
+            for (int k = 0; k < 785; k++) {
+                if (trainSet[i][k] != 0.0) {
+                    out.println("$(du.makeString(trainSet[i][k]))")
+                }
             }
         }
         

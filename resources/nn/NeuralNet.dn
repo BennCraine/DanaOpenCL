@@ -2,8 +2,10 @@ const int RELU = 0
 
 const int BACK_PROP = 0
 
+uses gpu.LogicalComputeDevice
+
 interface NeuralNet {
-    NeuralNet()
+    NeuralNet(store LogicalComputeDevice dev)
     void setInputVectorSize(int sz)
     void setTrainingSetSize(int sz)
     void setOutputVectorSize(int sz)

@@ -1,0 +1,6 @@
+uses gpu.LogicalComputeDevice
+
+interface TypeConversion {
+    TypeConversion(store LogicalComputeDevice dev)
+    dec[][] intToDecMatrix(int matrix[][])
+}

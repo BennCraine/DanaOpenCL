@@ -476,10 +476,10 @@ INSTRUCTION_DEF createMatrix(FrameData* cframe) {
     cl_image_desc desc = {CL_MEM_OBJECT_IMAGE2D, x_bytes, y_bytes, 0, 1, 0, 0, 0, 0, NULL};
     cl_image_format form;
     if (type == FLOAT) {
-        form = (cl_image_format) {CL_INTENSITY, CL_FLOAT};
+        form = (cl_image_format) {CL_R, CL_FLOAT};
     }
     else if (type == UINT) {
-        form = (cl_image_format) {CL_INTENSITY, CL_UNSIGNED_INT32};
+        form = (cl_image_format) {CL_R, CL_UNSIGNED_INT32};
     }
     else {
         api->returnInt(cframe, (uint64_t) 0);
@@ -487,6 +487,7 @@ INSTRUCTION_DEF createMatrix(FrameData* cframe) {
     }
 
     cl_mem newMatrix = clCreateImage(context, CL_MEM_READ_WRITE, &form, &desc, NULL, &CL_err);
+    printf("newMatrix: %lu\n", newMatrix);
 
     if (CL_err != CL_SUCCESS) {
         printf("issue in matrix creation\n");
@@ -681,10 +682,10 @@ INSTRUCTION_DEF prepareKernel(FrameData* cframe) {
     size_t paramCount = (size_t) rawParam;
 
     DanaEl* paramArray = api->getParamEl(cframe, 1);
-    cl_mem* rawParamArray = (cl_mem*) malloc(sizeof(cl_mem)*paramCount);
-    cl_mem* rawParamArrayCpy = rawParamArray;
+    uint64_t* rawParamArray = (uint64_t*) malloc(sizeof(uint64_t)*paramCount);
+    uint64_t* rawParamArrayCpy = rawParamArray;
     for (int i = 0; i < paramCount; i++) {
-        *rawParamArrayCpy = (cl_mem) api->getArrayCellInt(paramArray, i);
+        *rawParamArrayCpy = (uint64_t) api->getArrayCellInt(paramArray, i);
         rawParamArrayCpy++;
     }
 
@@ -707,9 +708,10 @@ INSTRUCTION_DEF prepareKernel(FrameData* cframe) {
     CL_err = CL_SUCCESS;
     rawParamArrayCpy = rawParamArray;
     for (int i = 0; i < paramCount; i++) {
-        CL_err = clSetKernelArg(kernel, i, sizeof(cl_mem), rawParamArrayCpy);
+        CL_err = clSetKernelArg(kernel, i, sizeof(uint64_t), rawParamArrayCpy);
         if (CL_err != CL_SUCCESS) {
             printf("issue with kernel args: %d\n", CL_err);
+            printf("matrix: %lu\n", *rawParamArrayCpy);
             api->returnInt(cframe, (uint64_t) 0);
             return RETURN_OK;
         }
