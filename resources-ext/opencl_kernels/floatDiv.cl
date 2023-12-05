@@ -7,9 +7,6 @@ __kernel void floatDiv(__global unsigned int* divider, read_only image2d_t matri
     float4 fromDevice = read_imagef(matrix, sampler, (int2)(gidx, gidy));
     float ourNumber = fromDevice[0];
     float divided = ourNumber / divider[0];
-    if (divided != 0.0) {
-        printf("%d | %f\n", gidx, divided);
-    }
 
     write_imagef(matrix_write, (int2)(gidx, gidy), (float4)(divided, 0 ,0 ,0));
 }

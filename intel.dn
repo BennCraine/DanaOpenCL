@@ -1,0 +1,21 @@
+component provides App requires gpu.LogicalComputeDevice, linear.LinearOperations, data.adt.List, io.Output out, data.IntUtil iu {
+    int App:main(AppParam params[]) {
+        LogicalComputeDevice dev = new LogicalComputeDevice()
+        LinearOperations ops = new LinearOperations(dev)
+
+        int a[] = new int[10]
+        int b[] = new int[10]
+
+        for (int i = 0; i < a.arrayLength; i++) {
+            a[i] = 5
+            b[i] = 7
+        }
+
+        int c[] = ops.vectorAddInt(a, b)
+
+        for (int i = 0; i < a.arrayLength; i++) {
+            out.println("$(iu.makeString(c[i]))")
+        }
+        return 0
+    }
+}

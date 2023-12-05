@@ -13,6 +13,13 @@
 - [x] Automate the task of how the kernel will be executed on the physical devices archutecture, i.e. work units <br>
 - [ ] Add a verbose error management system
 - [ ] Rewrite read vectors / matrix function, see 'readFloatArray' for ref
+- [ ] .cl prims
+    - [ ] vadd
+    - [ ] vscale
+    - [ ] vdot
+    - [ ] transpose mat
+    - [ ] linear transform
+    - [ ] mat multiplication
 
 **Beyond V1** <br>
 - [ ] Linear algebra library <br>

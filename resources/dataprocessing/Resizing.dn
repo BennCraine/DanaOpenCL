@@ -1,0 +1,5 @@
+uses gpu.LogicalComputeDevice
+interface Resizing {
+    Resizing(store LogicalComputeDevice dev)
+    int[][] chopColumnI(int matrix[][], int start, int end)
+}

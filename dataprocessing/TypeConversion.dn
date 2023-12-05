@@ -13,14 +13,18 @@ component provides dataprocessing.TypeConversion requires gpu.LogicalComputeDevi
 
         myDev.createMatrix("floatmat", FLOAT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
 
-        myDev.createArray("fu", FLOAT, 10)
+        myDev.createArray("hmmm", FLOAT, 10)
 
-        String params[] = new String[](new String("fu"), new String("intmat"), new String("floatmat"))
+        String params[] = new String[](new String("hmmm"), new String("intmat"), new String("floatmat"))
         myDev.runProgram("intToDouble", params)
+
         Matrix newMat = myDev.readMatrix("floatmat")
         dec returnVal[][] = newMat.fvalues
+
         myDev.destroyMatrix("intmat")
         myDev.destroyMatrix("floatmat")
+        myDev.destroyArray("hmmm")
+
         return returnVal
     }
 }

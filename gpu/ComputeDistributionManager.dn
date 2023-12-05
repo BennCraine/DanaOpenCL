@@ -55,8 +55,8 @@ component provides gpu.ComputeDistributionManager requires gpu.ComputeManager,
 
     HashTableItem ComputeDistributionManager:mallocWhichDevice() {
         HashTableItem keyValue = new HashTableItem()
-        keyValue.key = physicalDevices[1].string
-        keyValue.value = physicalDevicesIDs.get(physicalDevices[1].string)
+        keyValue.key = physicalDevices[0].string
+        keyValue.value = physicalDevicesIDs.get(physicalDevices[0].string)
         return keyValue
     }
 

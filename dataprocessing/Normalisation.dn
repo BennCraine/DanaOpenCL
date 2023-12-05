@@ -7,13 +7,21 @@ component provides dataprocessing.Normalisation requires gpu.LogicalComputeDevic
 
     dec[][] Normalisation:matrixDivision(dec matrix[][], int divider) {
         myDev.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/floatDiv.cl", "floatDiv")
+
         myDev.createMatrix("mat", FLOAT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
         myDev.writeMatrix("mat", matrix, null)
         myDev.createMatrix("out", FLOAT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
+
         String params[] = new String[](new String("const:$(iu.makeString(divider))"), new String("mat"), new String("out"))
         myDev.runProgram("floatDiv", params)
+
         Matrix m = myDev.readMatrix("out")
         dec returnVal[][] = m.fvalues
+
+        myDev.destroyMatrix("mat")
+        myDev.destroyMatrix("out")
+        myDev.destroyArray("const:$(iu.makeString(divider))")
+
         return returnVal
     }
 }

@@ -1,0 +1,66 @@
+component provides linear.LinearOperations requires gpu.LogicalComputeDevice, time.Timer t, io.Output out{
+
+    LogicalComputeDevice myDev
+
+    LinearOperations:LinearOperations(store LogicalComputeDevice dev) {
+        myDev = dev
+        myDev.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/vaddi.cl", "vaddi")
+    }
+
+    int[] LinearOperations:vectorAddInt(int A[], int B[]) {
+
+        myDev.createArray("A", UINT, A.arrayLength)
+        myDev.createArray("B", UINT, B.arrayLength)
+        myDev.createArray("C", UINT, B.arrayLength)
+
+        myDev.writeArray("A", null, A)
+        myDev.writeArray("B", null, B)
+
+        String params[] = new String[](new String("A"), new String("B"), new String("C"))
+        myDev.runProgram("vaddi", params)
+
+
+        Vector result = myDev.readArray("C")
+        int resInt[] = result.ivalues
+
+        myDev.destroyArray("A")
+        myDev.destroyArray("B")
+        myDev.destroyArray("C")
+
+
+        return resInt
+    }
+
+    dec[] LinearOperations:vectorAddDec(dec A[], dec B[]) {
+        return null
+    }
+
+    int[] LinearOperations:vectorScaleInt(int A[], int S) {
+        return null
+    }
+
+    dec[] LinearOperations:vectorScaleDec(dec A[], dec S) {
+        return null
+    }
+
+    int[] LinearOperations:vectorDotInt(int A[], int B[]) {
+        return null
+    }
+
+    dec[] LinearOperations:vectorDotDec(dec A[], dec B[]) {
+        return null
+    }
+
+    dec[] LinearOperations:linearTransform(dec T[][], dec V[]) {
+        return null
+    }
+
+    dec[] LinearOperations:transpose(dec M[][]) {
+        return null
+    }
+
+    dec[] LinearOperations:matrixMultiply(dec A[][], dec B[][]) {
+        return null
+    }
+
+}

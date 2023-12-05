@@ -4,6 +4,20 @@ const int BACK_PROP = 0
 
 uses gpu.LogicalComputeDevice
 
+data Network {
+    String W[]
+    String B[]
+    String Z[]
+    String A[]
+    String C
+}
+
+data Gradient {
+    String dW[]
+    String dB[]
+    String dZ[]
+}
+
 interface NeuralNet {
     NeuralNet(store LogicalComputeDevice dev)
     void setInputVectorSize(int sz)
@@ -12,6 +26,9 @@ interface NeuralNet {
     void setHiddenLayerSizes(int sz[])
     void setHiddenLayerActivation(int layer, int function)
     void setTrainingAlgo(int algo)
-    void train(dec trainSet[][])
+    void setTrainingLabels(int labels[])
+    void setItterations(int it)
+    void setLearningRate(dec lr)
+    void train(store dec trainSet[][])
     dec[] predict(dec vect[])
 }
