@@ -1,0 +1,49 @@
+component provides App requires gpu.LogicalComputeDevice, 
+                                            nn.NeuralNet, 
+                                            io.File, 
+                                            data.csv.CSVParser parse, 
+                                            io.Output out, 
+                                            data.IntUtil iu, 
+                                            dataprocessing.TypeConversion,
+                                            dataprocessing.Normalisation, 
+                                            dataprocessing.Resizing,
+                                            data.DecUtil du {
+
+    int App:main(AppParam params[]) { 
+        LogicalComputeDevice dev = new LogicalComputeDevice()
+        
+        NeuralNet nn = new NeuralNet(dev)
+        TypeConversion tc = new TypeConversion(dev)
+        Normalisation norm = new Normalisation(dev)
+        Resizing rz = new Resizing(dev)
+
+        nn.setInputVectorSize(785)
+        nn.setTrainingSetSize(100)
+        nn.setOutputVectorSize(10)
+        nn.setHiddenLayerSizes(new int[](16, 16))
+        nn.setTrainingAlgo(BACK_PROP)
+
+        dec trainSet[][]
+        int iTrainSet[][]
+
+        File fd = new File("/home/ben/Documents/PhD/Datasets/mnist/mnist_train.csv", File.READ)
+        iTrainSet = parse.parseDocumentI(fd, true, new char[](","), 785, 100) 
+
+        int labels[] = new int[iTrainSet.arrayLength]
+        for (int i = 0; i < iTrainSet.arrayLength; i++){
+            labels[i] = iTrainSet[i][0]
+        }
+        nn.setTrainingLabels(labels)
+
+        iTrainSet = rz.chopColumnI(iTrainSet, 0, 1)
+
+        trainSet = tc.intToDecMatrix(iTrainSet)
+        trainSet = norm.matrixDivision(trainSet, 255)
+        
+        nn.setItterations(10)
+        nn.setLearningRate(0.1)
+        nn.train(trainSet)
+
+        return 0
+    }
+}

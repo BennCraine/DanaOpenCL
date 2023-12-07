@@ -1,0 +1,34 @@
+const int RELU = 0
+
+const int BACK_PROP = 0
+
+uses gpu.LogicalComputeDevice
+
+data Network {
+    String W[]
+    String B[]
+    String Z[]
+    String A[]
+    String C
+}
+
+data Gradient {
+    String dW[]
+    String dB[]
+    String dZ[]
+}
+
+interface NeuralNet {
+    NeuralNet(store LogicalComputeDevice dev)
+    void setInputVectorSize(int sz)
+    void setTrainingSetSize(int sz)
+    void setOutputVectorSize(int sz)
+    void setHiddenLayerSizes(int sz[])
+    void setHiddenLayerActivation(int layer, int function)
+    void setTrainingAlgo(int algo)
+    void setTrainingLabels(int labels[])
+    void setItterations(int it)
+    void setLearningRate(dec lr)
+    void train(store dec trainSet[][])
+    dec[] predict(dec vect[])
+}
