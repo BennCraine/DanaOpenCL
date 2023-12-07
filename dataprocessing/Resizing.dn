@@ -1,11 +1,15 @@
-component provides dataprocessing.Resizing requires gpu.LogicalComputeDevice {
+component provides dataprocessing.Resizing requires gpu.LogicalComputeDevice, data.IntUtil iu, io.Output out{
     LogicalComputeDevice myDev
 
     Resizing:Resizing() {
         myDev = new LogicalComputeDevice()
+        myDev.loadProgram("./resources-ext/opencl_kernels/dataprocessing/chopColumnI.cl", "chopColumnI")
+        myDev.loadProgram("./resources-ext/opencl_kernels/dataprocessing/chopColumnF.cl", "chopColumnF")
+        myDev.loadProgram("./resources-ext/opencl_kernels/dataprocessing/chopRowI.cl", "chopRowI")
+        myDev.loadProgram("./resources-ext/opencl_kernels/dataprocessing/chopRowF.cl", "chopRowF")
     }
 
-    int[][] Resizing:chopColumnI(int matrix[][], int start, int end) {
+    int[][] Resizing:chopColumnInt(int matrix[][], int start, int end) {
         myDev.createMatrix("in", UINT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
         myDev.writeMatrix("in", null, matrix)
 
@@ -17,13 +21,90 @@ component provides dataprocessing.Resizing requires gpu.LogicalComputeDevice {
         indicies[1] = end
         myDev.writeArray("indicies", null, indicies)
 
-        myDev.loadProgram("./resources-ext/opencl_kernels/dataprocessing/chopColumnI.cl", "chopColumnI")
         String params[] = new String[](new String("indicies"), new String("in"), new String("out"))
 
         myDev.runProgram("chopColumnI", params)
 
         Matrix m = myDev.readMatrix("out")
         int returnVal[][] = m.ivalues
+
+        myDev.destroyMatrix("in")
+        myDev.destroyMatrix("out")
+        myDev.destroyArray("indicies")
+
+        return returnVal
+    }
+
+    dec[][] Resizing:chopColumnDec(dec matrix[][], int start, int end) {
+        myDev.createMatrix("in", FLOAT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
+        myDev.writeMatrix("in", matrix, null)
+
+        myDev.createMatrix("out", FLOAT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength-(end-start)))
+
+        myDev.createArray("indicies", UINT, 2)
+        int indicies[] = new int[2]
+        indicies[0] = start
+        indicies[1] = end
+        myDev.writeArray("indicies", null, indicies)
+
+        String params[] = new String[](new String("indicies"), new String("in"), new String("out"))
+
+        myDev.runProgram("chopColumnF", params)
+
+        Matrix m = myDev.readMatrix("out")
+        dec returnVal[][] = m.fvalues
+
+        myDev.destroyMatrix("in")
+        myDev.destroyMatrix("out")
+        myDev.destroyArray("indicies")
+
+        return returnVal
+    }
+
+    int[][] Resizing:chopRowInt(int matrix[][], int start, int end) {
+        myDev.createMatrix("in", UINT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
+        myDev.writeMatrix("in", null, matrix)
+
+        myDev.createMatrix("out", UINT, 2, new int[](matrix.arrayLength-(end-start), matrix[0].arrayLength))
+
+        myDev.createArray("indicies", UINT, 2)
+        int indicies[] = new int[2]
+        indicies[0] = start
+        indicies[1] = end
+        myDev.writeArray("indicies", null, indicies)
+
+        String params[] = new String[](new String("indicies"), new String("in"), new String("out"))
+
+        myDev.runProgram("chopRowI", params)
+
+        Matrix m = myDev.readMatrix("out")
+        int returnVal[][] = m.ivalues
+
+        myDev.destroyMatrix("in")
+        myDev.destroyMatrix("out")
+        myDev.destroyArray("indicies")
+
+        return returnVal
+    }
+
+    dec[][] Resizing:chopRowDec(dec matrix[][], int start, int end) {
+        myDev.createMatrix("in", FLOAT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
+        myDev.writeMatrix("in", matrix, null)
+
+        myDev.createMatrix("out", FLOAT, 2, new int[](matrix.arrayLength-(end-start), matrix[0].arrayLength))
+
+        myDev.createArray("indicies", UINT, 2)
+        int indicies[] = new int[2]
+        indicies[0] = start
+        indicies[1] = end
+        myDev.writeArray("indicies", null, indicies)
+
+        String params[] = new String[](new String("indicies"), new String("in"), new String("out"))
+
+        myDev.runProgram("chopRowF", params)
+
+        Matrix m = myDev.readMatrix("out")
+        dec returnVal[][] = m.fvalues
 
         myDev.destroyMatrix("in")
         myDev.destroyMatrix("out")

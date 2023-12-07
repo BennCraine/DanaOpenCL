@@ -31,7 +31,7 @@ component provides gpu.ComputeDistributionManager requires gpu.ComputeManager,
 
         //grab the first available device
         ChandleWrapper handle = new ChandleWrapper(deviceIDs[0])
-        physicalDevicesIDs.add(physicalDevices[0], handle)
+        physicalDevicesIDs.put(physicalDevices[0].string, handle)
 
         nat.createContext_w(deviceIDs[0])
 

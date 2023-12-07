@@ -3,19 +3,16 @@ component provides dataprocessing.TypeConversion requires gpu.LogicalComputeDevi
 
     TypeConversion:TypeConversion() {
         myDev = new LogicalComputeDevice()
+        myDev.loadProgram("./resources-ext/opencl_kernels/dataprocessing/intToDouble.cl", "intToDouble")
     }
 
     dec[][] TypeConversion:intToDecMatrix(int matrix[][]){
-        myDev.loadProgram("./resources-ext/opencl_kernels/dataprocessing/intToDouble.cl", "intToDouble")
-
         myDev.createMatrix("intmat", UINT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
         myDev.writeMatrix("intmat", null, matrix)
 
         myDev.createMatrix("floatmat", FLOAT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
 
-        myDev.createArray("hmmm", FLOAT, 10)
-
-        String params[] = new String[](new String("hmmm"), new String("intmat"), new String("floatmat"))
+        String params[] = new String[](new String("intmat"), new String("floatmat"))
         myDev.runProgram("intToDouble", params)
 
         Matrix newMat = myDev.readMatrix("floatmat")
@@ -23,7 +20,6 @@ component provides dataprocessing.TypeConversion requires gpu.LogicalComputeDevi
 
         myDev.destroyMatrix("intmat")
         myDev.destroyMatrix("floatmat")
-        myDev.destroyArray("hmmm")
 
         return returnVal
     }

@@ -1,4 +1,7 @@
 interface Resizing {
     Resizing()
-    int[][] chopColumnI(int matrix[][], int start, int end)
+    int[][] chopColumnInt(int matrix[][], int start, int end)
+    int[][] chopRowInt(int matrix[][], int start, int end)
+    dec[][] chopColumnDec(dec matrix[][], int start, int end)
+    dec[][] chopRowDec(dec matrix[][], int start, int end)
 }

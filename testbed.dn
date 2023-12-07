@@ -1,7 +1,11 @@
-component provides App requires linear.LinearOperations, data.adt.List, io.Output out, data.IntUtil iu, data.DecUtil du{
+component provides App requires linear.LinearOperations, dataprocessing.Resizing, dataprocessing.Normalisation, dataprocessing.TypeConversion, data.adt.List, io.Output out, data.IntUtil iu, data.DecUtil du{
     int App:main(AppParam params[]) {
         LinearOperations ops = new LinearOperations()
         LinearOperations opst = new LinearOperations()
+
+        Resizing rz = new Resizing()
+        Normalisation nz = new Normalisation()
+        TypeConversion tc = new TypeConversion()
 
         int a[] = new int[10]
         int b[] = new int[10]
@@ -82,6 +86,62 @@ component provides App requires linear.LinearOperations, data.adt.List, io.Outpu
             }
             out.print("\n")
         }
+
+        int intMat[][] = new int[][](new int[](1, 2, 5, 5), new int[](1, 2,10, 10), new int[](1, 2, 15, 15))
+        dec decMat[][] = tc.intToDecMatrix(intMat)
+        for (int i = 0; i < intMat.arrayLength; i++) {
+            for (int k = 0; k < intMat[0].arrayLength; k++) {
+                out.print("| $(du.makeString(decMat[i][k])) | ")
+            }
+            out.print("\n")
+        }
+        out.print("\n")
+
+        decMat = rz.chopColumnDec(decMat, 0, 2)
+        for (int i = 0; i < decMat.arrayLength; i++) {
+            for (int k = 0; k < decMat[0].arrayLength; k++) {
+                out.print("| $(du.makeString(decMat[i][k])) | ")
+            }
+            out.print("\n")
+        }
+        out.print("\n")
+
+        intMat = rz.chopColumnInt(intMat, 0, 2)
+        for (int i = 0; i < decMat.arrayLength; i++) {
+            for (int k = 0; k < decMat[0].arrayLength; k++) {
+                out.print("| $(iu.makeString(intMat[i][k])) | ")
+            }
+            out.print("\n")
+        }
+        out.print("\n")
+
+        decMat = rz.chopRowDec(decMat, 1, 2)
+        for (int i = 0; i < decMat.arrayLength; i++) {
+            for (int k = 0; k < decMat[0].arrayLength; k++) {
+                out.print("| $(du.makeString(decMat[i][k])) | ")
+            }
+            out.print("\n")
+        }
+        out.print("\n")
+
+        intMat = rz.chopRowInt(intMat, 1, 2)
+        for (int i = 0; i < intMat.arrayLength; i++) {
+            for (int k = 0; k < intMat[0].arrayLength; k++) {
+                out.print("| $(iu.makeString(intMat[i][k])) | ")
+            }
+            out.print("\n")
+        }
+        out.print("\n")
+
+        decMat = nz.matrixDivision(decMat, 0.5) 
+        for (int i = 0; i < decMat.arrayLength; i++) {
+            for (int k = 0; k < decMat[0].arrayLength; k++) {
+                out.print("| $(du.makeString(decMat[i][k])) | ")
+            }
+            out.print("\n")
+        }
+        out.print("\n")
+
 
         return 0
     }

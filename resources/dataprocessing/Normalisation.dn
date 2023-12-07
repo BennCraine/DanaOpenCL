@@ -1,4 +1,4 @@
 interface Normalisation {
     Normalisation()
-    dec[][] matrixDivision(dec matrix[][], int divider)
+    dec[][] matrixDivision(dec matrix[][], dec divider)
 }

@@ -634,6 +634,7 @@ INSTRUCTION_DEF readIntMatrix(FrameData* cframe) {
     size_t origin[] = {0, 0, 0};
     size_t region[] = {hostMatrixLens[1], hostMatrixLens[0], 1};
 
+
     int CL_Err = clEnqueueReadImage(queue, memObj, CL_TRUE, origin, region, 0, 0, rawHostMatrix, 0, NULL, NULL);
     if (CL_Err != CL_SUCCESS) {
         printf("error in read matrix: %d\n", CL_Err);
@@ -696,6 +697,7 @@ INSTRUCTION_DEF readFloatMatrix(FrameData* cframe) {
 
     size_t origin[] = {0, 0, 0};
     size_t region[] = {hostMatrixLens[1], hostMatrixLens[0], 1};
+
 
     int CL_Err = clEnqueueReadImage(queue, memObj, CL_TRUE, origin, region, 0, 0, rawHostMatrix, 0, NULL, NULL);
     if (CL_Err != CL_SUCCESS) {
