@@ -1,7 +1,7 @@
-component provides App requires gpu.LogicalComputeDevice, linear.LinearOperations, data.adt.List, io.Output out, data.IntUtil iu {
+component provides App requires linear.LinearOperations, data.adt.List, io.Output out, data.IntUtil iu, data.DecUtil du{
     int App:main(AppParam params[]) {
-        LogicalComputeDevice dev = new LogicalComputeDevice()
-        LinearOperations ops = new LinearOperations(dev)
+        LinearOperations ops = new LinearOperations()
+        LinearOperations opst = new LinearOperations()
 
         int a[] = new int[10]
         int b[] = new int[10]
@@ -12,10 +12,77 @@ component provides App requires gpu.LogicalComputeDevice, linear.LinearOperation
         }
 
         int c[] = ops.vectorAddInt(a, b)
-
+        /*
         for (int i = 0; i < a.arrayLength; i++) {
             out.println("$(iu.makeString(c[i]))")
         }
+        */
+        dec d[] = new dec[10]
+        dec e[] = new dec[10]
+
+        for (int i = 0; i < a.arrayLength; i++) {
+            d[i] = 5.0
+            e[i] = 7.0
+        }
+
+        dec f[] = ops.vectorAddDec(d, e)
+        /*
+        for (int i = 0; i < a.arrayLength; i++) {
+            out.println("$(du.makeString(f[i]))")
+        }
+        */
+
+        b = ops.vectorScaleInt(a, 3)
+        /*
+        for (int i = 0; i < b.arrayLength; i++) {
+            out.println("$(iu.makeString(b[i]))")
+        }
+        */
+        e = ops.vectorScaleDec(d, 3.5)
+        /*
+        for (int i = 0; i < e.arrayLength; i++) {
+            out.println("$(du.makeString(e[i]))")
+        }
+        */
+
+        dec t[][] = new dec[][](new dec[](1.0, 2.0), new dec[](3.0, 4.0))
+        dec v[] = new dec[](6.0, 9.0)
+
+        dec vt[] = ops.linearTransform(t, v)
+        for (int i = 0; i < vt.arrayLength; i++) {
+            out.println("$(du.makeString(vt[i]))")
+        }
+
+        dec ts[][] = new dec[][](new dec[](1.0, 2.0,1.0, 2.0,1.0, 2.0,1.0, 2.0,1.0, 2.0), new dec[](3.0, 4.0,1.0, 2.0,1.0, 2.0,1.0, 2.0,1.0, 2.0))
+        dec tt[][] = opst.transpose(ts)
+
+        for (int i = 0; i < ts.arrayLength; i++) {
+            for (int k = 0; k < ts[0].arrayLength; k++) {
+                out.print("| $(du.makeString(ts[i][k])) | ")
+            }
+            out.print("\n")
+        }
+        out.print("\n")
+        for (int i = 0; i < tt.arrayLength; i++) {
+            for (int k = 0; k < tt[0].arrayLength; k++) {
+                out.print("| $(du.makeString(tt[i][k])) | ")
+            }
+            out.print("\n")
+        }
+
+        out.print("\n")
+        dec mulOne[][] = new dec[][](new dec[](1.0,2.0,3.0), new dec[](4.0,5.0,6.0))
+        dec mulTwo[][] = new dec[][](new dec[](7.0,8.0), new dec[](9.0,10.0), new dec[](11.0, 12.0))
+
+        dec mulTogether[][] = ops.matrixMultiply(mulOne, mulTwo)
+
+        for (int i = 0; i < mulTogether.arrayLength; i++) {
+            for (int k = 0; k < mulTogether[0].arrayLength; k++) {
+                out.print("| $(du.makeString(mulTogether[i][k])) | ")
+            }
+            out.print("\n")
+        }
+
         return 0
     }
 }

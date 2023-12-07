@@ -1,17 +1,17 @@
 uses data.String
 
 interface OpenCLLib {
-    void init()
+    int init()
 	void findPlatforms()
     int[] getComputeDeviceIDs()
     String[] getComputeDevices()
-    void createContext(int devices[])
-    int createAsynchQueue(int device)
-    int createSynchQueue(int device)
-    int createArray(int device, int length, int type)
-    int createMatrix(int device, int width, int height, int type)
+    void createContext(int devices[], int danaComp)
+    int createAsynchQueue(int device, int danaComp)
+    int createSynchQueue(int device, int danaComp)
+    int createArray(int device, int length, int type, int danaComp)
+    int createMatrix(int device, int width, int height, int type, int danaComp)
     void destroyMemoryArea(int memObj_cl)
-    int[] createProgram(char source[])
+    int[] createProgram(char source[], int danaComp)
     void writeIntArray(int queue_cl, int memObj_cl, int values[])
     int[] readIntArray(int queue_cl, int memObj_cl, int buf[])
     void writeFloatArray(int queue_cl, int memObj_cl, dec values[])
@@ -32,8 +32,10 @@ component provides gpu.Compute requires native OpenCLLib lib,
                                         data.adt.HashTable, 
                                         data.IntUtil iu {
 
+    int myDanaComp
+
     void Compute:init_w() {
-        lib.init()
+        myDanaComp = lib.init()
     }
 	void Compute:findPlatforms_w() {
         lib.findPlatforms()
@@ -45,21 +47,21 @@ component provides gpu.Compute requires native OpenCLLib lib,
         return lib.getComputeDevices()
     }
     void Compute:createContext_w(int devices[]) {
-        lib.createContext(devices)
+        lib.createContext(devices, myDanaComp)
     }
     int Compute:createAsynchQueue_w(int device) {
-        return lib.createAsynchQueue(device)
+        return lib.createAsynchQueue(device, myDanaComp)
     }
     int Compute:createSynchQueue_w(int device) {
-        return lib.createSynchQueue(device)
+        return lib.createSynchQueue(device, myDanaComp)
     }
     int Compute:createArray_w(int device, int length, int type) {
         if (type == FLOAT) {
-            int arr = lib.createArray(device, length, FLOAT)
+            int arr = lib.createArray(device, length, FLOAT, myDanaComp)
             return arr
         }
         else if (type == UINT) {
-            int arr = lib.createArray(device, length, UINT)
+            int arr = lib.createArray(device, length, UINT, myDanaComp)
             return arr
         }
         else {
@@ -68,11 +70,11 @@ component provides gpu.Compute requires native OpenCLLib lib,
     }
     int Compute:createMatrix_w(int device, int width, int height, int type) {
         if (type == FLOAT) {
-            int mat = lib.createMatrix(device, width, height, FLOAT)
+            int mat = lib.createMatrix(device, width, height, FLOAT, myDanaComp)
             return mat
         }
         else if (type == UINT) {
-            int mat = lib.createMatrix(device, width, height, UINT)
+            int mat = lib.createMatrix(device, width, height, UINT, myDanaComp)
             return mat
         }
         else {
@@ -83,7 +85,7 @@ component provides gpu.Compute requires native OpenCLLib lib,
         lib.destroyMemoryArea(memObj_cl)
     }
     int[] Compute:createProgram_w(char source[]) {
-        int x[] = lib.createProgram(source)
+        int x[] = lib.createProgram(source, myDanaComp)
         return x
     }
     void Compute:writeIntArray_w(int queue_cl, int memObj_cl, int values[]) {

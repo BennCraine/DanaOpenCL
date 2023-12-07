@@ -67,7 +67,6 @@ component provides LogicalComputeDevice requires gpu.Compute,
         ChandleWrapper deviceHandle = device.value
         char deviceName[] = device.key
         int clMemObj = nat.createMatrix_w(deviceHandle.handle, lengths[0], lengths[1], type)
-        out.println("lens: $(lengths[0]), $(lengths[1])")
         ChandleWrapper matrixHandle = new ChandleWrapper(clMemObj)
         OpenMemArea newMem = new OpenMemArea(matrixHandle, new String(deviceName), dim, lengths, type)
         openMemoryAreas.put(name, newMem)
@@ -269,7 +268,13 @@ component provides LogicalComputeDevice requires gpu.Compute,
     }
 
     String[] LogicalComputeDevice:getPrograms() {
-        return null
+        HashTableItem progs[] = programs.getContents()
+
+        String progNames[] = new String[progs.arrayLength]
+        for (int i = 0; i < progs.arrayLength; i++) {
+            progNames[i] = new String(progs[i].key)
+        }
+        return progNames
     }
 
     bool isConst(char param[]) {
@@ -294,7 +299,6 @@ component provides LogicalComputeDevice requires gpu.Compute,
 
     dec getDecConst(char param[]) {
         String exploded[] = su.explode(param, ":")
-        out.println(exploded[1].string)
         return du.decFromString(exploded[1].string)
     }
 
@@ -327,7 +331,6 @@ component provides LogicalComputeDevice requires gpu.Compute,
                 }
             }
             OpenMemArea x = openMemoryAreas.get(params[i].string)
-            out.println(params[i].string)
             ChandleWrapper memHandle = x.hand
             paramHandles[i] = memHandle.handle
             String device = x.device

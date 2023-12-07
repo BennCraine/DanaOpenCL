@@ -37,11 +37,12 @@ static GlobalTypeLink* stringItemGT = NULL;
 static GlobalTypeLink* intMatrixGT = NULL;
 static GlobalTypeLink* decArrayGT = NULL;
 
+uint8_t alreadyInitFlag = 0;
+
 cl_platform_id* globalClPlatforms;
 cl_uint numofPlatforms;
 cl_uint* numOfDevicesPerPlatform;
 cl_device_id** devices;
-cl_context* contexts;
 cl_program* programs;
 
 typedef struct _device_context_map {
@@ -50,16 +51,67 @@ typedef struct _device_context_map {
     struct _device_context_map* next;
 } DC_MAP;
 
-DC_MAP* map = NULL;
-DC_MAP* mapEnd = NULL;
+typedef struct _context_list_item {
+    cl_context context;
+    struct _context_list_item* next;
+} CONTEXT_LI;
+
+typedef struct _one_per_dana_comp {
+    CONTEXT_LI* contexts;
+    DC_MAP* map;
+    DC_MAP* mapEnd;
+} DANA_COMP;
+
+void addNewContext(DANA_COMP* danaComp, CONTEXT_LI* newContext) {
+    if (danaComp->contexts == NULL) {
+        danaComp->contexts = newContext;
+        return;
+    }
+
+    CONTEXT_LI* probe = danaComp->contexts;
+    for (probe; probe->next != NULL; probe = probe->next) {
+    }
+    probe->next = newContext;
+}
+
+int getNumOfContexts(DANA_COMP* danaComp) {
+    CONTEXT_LI* probe = danaComp->contexts;
+    if (danaComp->contexts == NULL) {
+        return 0;
+    }
+    int count = 0;
+    for (probe; probe->next != NULL; probe = probe->next) {
+        count++;
+    }
+    count++;
+    return count;
+}
+
+CONTEXT_LI* getContextByIndex(DANA_COMP* danaComp, int n) {
+    CONTEXT_LI* probe = danaComp->contexts;
+    if (danaComp->contexts == NULL) {
+        return NULL;
+    }
+    int count = 0;
+    for (probe; probe->next != NULL; probe = probe->next) {
+        if (count == n) {
+            return probe;
+        }
+        count++;
+    }
+    if (count == n) {
+        return probe;
+    }
+    return NULL;
+}
 
 /*
 // returns the context that a physical device belongs to
 // returns NULL if no context is found
 // this is linear but should be fine as most linked lists are not going to exceed 10 items
 */
-cl_context getMapping(cl_device_id id) {
-    DC_MAP* probe = map;
+cl_context getMapping(DANA_COMP* danaComp, cl_device_id id) {
+    DC_MAP* probe = danaComp->map;
     for (probe; probe->next != NULL; probe = probe->next) {
         if (probe->device == id) {
             
@@ -82,9 +134,18 @@ cl_context getMapping(cl_device_id id) {
  * 4) for each platform, get and store the device IDs
  * 5) set the global number of platforms
  */
-INSTRUCTION_DEF init(void) {
+INSTRUCTION_DEF init(VFrame* cframe) {
     cl_int CL_err = CL_SUCCESS;
     cl_uint numPlatforms = 0;
+
+    if (alreadyInitFlag) {
+        DANA_COMP* dana_component_id = (DANA_COMP*) malloc(sizeof(DANA_COMP));
+        dana_component_id->contexts = NULL;
+        dana_component_id->map = NULL;
+        dana_component_id->mapEnd = NULL;
+        api->returnInt(cframe, (uint64_t) dana_component_id);
+        return RETURN_OK;
+    }
 
     //1
     globalClPlatforms = (cl_platform_id*) malloc(sizeof(cl_platform_id)*MAX_PLATFORMS);
@@ -94,6 +155,7 @@ INSTRUCTION_DEF init(void) {
     if (CL_err != CL_SUCCESS) {
         printf("platform id broke in init\n");
     }
+
     
     //3
     devices = (cl_device_id**) malloc(sizeof(cl_device_id*)*numPlatforms);
@@ -112,6 +174,14 @@ INSTRUCTION_DEF init(void) {
 
     //5
     numofPlatforms = numPlatforms;
+
+    alreadyInitFlag = 1;
+
+    DANA_COMP* dana_component_id = (DANA_COMP*) malloc(sizeof(DANA_COMP));
+    dana_component_id->contexts = NULL;
+    dana_component_id->map = NULL;
+    dana_component_id->mapEnd = NULL;
+    api->returnInt(cframe, (uint64_t) dana_component_id);
 
     return RETURN_OK;
 }
@@ -224,12 +294,11 @@ INSTRUCTION_DEF createContext(FrameData* cframe) {
     DanaEl* deviceArray = api->getParamEl(cframe, 0);
     cl_device_id deviceHandles[api->getArrayLength(deviceArray)];
 
+    DANA_COMP* danaComp = (DANA_COMP*) api->getParamInt(cframe, 1);
+
     for (int i = 0; i < api->getArrayLength(deviceArray); i++) {
         deviceHandles[i] = (cl_device_id) api->getArrayCellInt(deviceArray, i);
     }
-
-    //create 1 context for each platform
-    contexts = (cl_context*) malloc(sizeof(cl_context)*numofPlatforms);
 
     /*
         1) for each platform get all the devices that are a part of that platform
@@ -255,6 +324,12 @@ INSTRUCTION_DEF createContext(FrameData* cframe) {
             }
         }
 
+        if (deviceForPlatCount == 0) {
+            break;
+        }
+
+        CONTEXT_LI* newContextItem = (CONTEXT_LI*) malloc(sizeof(CONTEXT_LI));
+
         //2
         //strip the array down to its mimimum size
         cl_device_id deviceHandlesForThisPlatCut[deviceForPlatCount];
@@ -264,8 +339,7 @@ INSTRUCTION_DEF createContext(FrameData* cframe) {
 
         //3
         const cl_context_properties props[] = {CL_CONTEXT_PLATFORM, platform, 0};
-        cl_context context = clCreateContext(props, deviceForPlatCount, deviceHandlesForThisPlatCut, NULL, NULL, &CL_Err);
-        contexts[i] = context;
+        newContextItem->context = clCreateContext(props, deviceForPlatCount, deviceHandlesForThisPlatCut, NULL, NULL, &CL_Err);
         if (CL_Err != CL_SUCCESS) {
             printf("cl not likey\n");
             printf("code: %d\n", CL_Err);
@@ -275,18 +349,20 @@ INSTRUCTION_DEF createContext(FrameData* cframe) {
         for (int j = 0; j < deviceForPlatCount; j++) {
             DC_MAP* newMapping = (DC_MAP*) malloc(sizeof(DC_MAP));
             newMapping->device = deviceHandlesForThisPlatCut[j];
-            newMapping->context = context;
+            newMapping->context = newContextItem->context;
             newMapping->next = NULL;
-            if (map == NULL) {
-                map = newMapping;
-                mapEnd = newMapping;
+            if (danaComp->map == NULL) {
+                danaComp->map = newMapping;
+                danaComp->mapEnd = newMapping;
             }
             else {
-                mapEnd->next = newMapping;
-                mapEnd = newMapping;
+                danaComp->mapEnd->next = newMapping;
+                danaComp->mapEnd = newMapping;
             }
         }
+        addNewContext(danaComp, newContextItem);
     }
+
     return RETURN_OK;
 }
 
@@ -294,9 +370,10 @@ INSTRUCTION_DEF createContext(FrameData* cframe) {
 INSTRUCTION_DEF createAsynchQueue(FrameData* cframe) {
     cl_int CL_err = CL_SUCCESS;
     u_int64_t rawParam = api->getParamInt(cframe, 0);
-
     cl_device_id device = (cl_device_id) rawParam; 
-    cl_context context = getMapping(device);
+
+    DANA_COMP* danaComp = (DANA_COMP*) api->getParamInt(cframe, 1);
+    cl_context context = getMapping(danaComp, device);
 
     const cl_queue_properties props[] = {CL_QUEUE_PROPERTIES, 0};
     cl_command_queue newQ = clCreateCommandQueueWithProperties(context, device, NULL, &CL_err);
@@ -313,7 +390,9 @@ INSTRUCTION_DEF createSynchQueue(FrameData* cframe) {
     u_int64_t rawParam = api->getParamInt(cframe, 0);
 
     cl_device_id device = (cl_device_id) rawParam; 
-    cl_context context = getMapping(device);
+
+    DANA_COMP* danaComp = (DANA_COMP*) api->getParamInt(cframe, 1);
+    cl_context context = getMapping(danaComp, device);
 
     const cl_queue_properties props[] = {CL_QUEUE_PROPERTIES, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, 0};
     cl_command_queue newQ = clCreateCommandQueueWithProperties(context, device, props, &CL_err);
@@ -328,7 +407,10 @@ INSTRUCTION_DEF createSynchQueue(FrameData* cframe) {
 INSTRUCTION_DEF createArray(FrameData* cframe) {
     cl_int CL_err = CL_SUCCESS;
     u_int64_t rawParam = api->getParamInt(cframe, 0);
-    cl_context context = getMapping((cl_device_id) rawParam);
+    cl_device_id device = (cl_device_id) rawParam;
+
+    DANA_COMP* danaComp = (DANA_COMP*) api->getParamInt(cframe, 3);
+    cl_context context = getMapping(danaComp, device);
 
     rawParam = api->getParamInt(cframe, 1);
     size_t length = (size_t) rawParam;
@@ -338,7 +420,7 @@ INSTRUCTION_DEF createArray(FrameData* cframe) {
 
     size_t size;
     if (type == FLOAT) {
-        size = sizeof(double_t)*length;
+        size = sizeof(float)*length;
     }
     else if (type == UINT) {
         size = sizeof(uint64_t)*length;
@@ -417,14 +499,14 @@ INSTRUCTION_DEF writeFloatArray(FrameData* cframe) {
     DanaEl* hostArray = api->getParamEl(cframe, 2);
     size_t hostArrayLen = api->getArrayLength(hostArray);
 
-    double_t* rawHostArray = (double_t*) malloc(sizeof(double_t)*hostArrayLen);
-    double_t* rawHostArrayCpy = rawHostArray;
+    float* rawHostArray = (float*) malloc(sizeof(float)*hostArrayLen);
+    float* rawHostArrayCpy = rawHostArray;
     for (int i = 0; i < hostArrayLen; i++) {
         *rawHostArrayCpy = api->getArrayCellDec(hostArray, i);
         rawHostArrayCpy++;
     }
 
-    cl_int CL_err = clEnqueueWriteBuffer(queue, memObj, CL_TRUE, 0, hostArrayLen*sizeof(double_t), rawHostArray, NULL, NULL, NULL);
+    cl_int CL_err = clEnqueueWriteBuffer(queue, memObj, CL_TRUE, 0, hostArrayLen*sizeof(float), rawHostArray, NULL, NULL, NULL);
     if (CL_err != CL_SUCCESS) {
         printf("error in write buffer");
     }
@@ -439,9 +521,9 @@ INSTRUCTION_DEF readFloatArray(FrameData* cframe) {
 
     size_t hostArrayLen = api->getParamInt(cframe, 2);
 
-    cl_double* fromDevice = (cl_double*) malloc(sizeof(cl_double)*hostArrayLen);
+    float* fromDevice = (float*) malloc(sizeof(float)*hostArrayLen);
 
-    cl_int CL_err = clEnqueueReadBuffer(queue, memObj, CL_TRUE, 0, hostArrayLen*sizeof(cl_double), fromDevice, NULL, NULL, NULL);
+    cl_int CL_err = clEnqueueReadBuffer(queue, memObj, CL_TRUE, 0, hostArrayLen*sizeof(float), fromDevice, NULL, NULL, NULL);
     if (CL_err != CL_SUCCESS) {
         printf("error in read buffer");
     }
@@ -461,18 +543,21 @@ INSTRUCTION_DEF readFloatArray(FrameData* cframe) {
 INSTRUCTION_DEF createMatrix(FrameData* cframe) {
     cl_int CL_err = CL_SUCCESS;
     u_int64_t rawParam = api->getParamInt(cframe, 0);
-    cl_context context = getMapping((cl_device_id) rawParam); 
+    cl_device_id device = (cl_device_id) rawParam;
+
+    DANA_COMP* danaComp = (DANA_COMP*) api->getParamInt(cframe, 4);
+    cl_context context = getMapping(danaComp, device);
 
     rawParam = api->getParamInt(cframe, 1);
-    size_t x_length = (size_t) rawParam;
+    size_t rows = (size_t) rawParam;
 
     rawParam = api->getParamInt(cframe, 2);
-    size_t y_length = (size_t) rawParam;
+    size_t cols = (size_t) rawParam;
 
     rawParam = api->getParamInt(cframe, 3);
     uint64_t type = (uint64_t) rawParam;
 
-    cl_image_desc desc = {CL_MEM_OBJECT_IMAGE2D, x_length, y_length, 0, 1, 0, 0, 0, 0, NULL};
+    cl_image_desc desc = {CL_MEM_OBJECT_IMAGE2D, cols, rows, 0, 1, 0, 0, 0, 0, NULL};
     cl_image_format form;
     if (type == FLOAT) {
         form = (cl_image_format) {CL_R, CL_FLOAT};
@@ -516,7 +601,7 @@ INSTRUCTION_DEF writeIntMatrix(FrameData* cframe) {
     }
 
     size_t origin[] = {0, 0, 0};
-    size_t region[] = {dims[0], dims[1], 1};
+    size_t region[] = {dims[1], dims[0], 1};
     cl_int CL_err = clEnqueueWriteImage(queue, memObj, CL_TRUE, origin, region, 0, 0, rawHostMatrix, 0, NULL, NULL);
 
     if (CL_err != CL_SUCCESS) {
@@ -540,7 +625,7 @@ INSTRUCTION_DEF readIntMatrix(FrameData* cframe) {
     uint32_t* rawHostMatrix = (uint32_t*) malloc(sizeof(uint32_t)*hostMatrixLens[0]*hostMatrixLens[1]);
 
     size_t origin[] = {0, 0, 0};
-    size_t region[] = {hostMatrixLens[0], hostMatrixLens[1], 1};
+    size_t region[] = {hostMatrixLens[1], hostMatrixLens[0], 1};
 
     int CL_Err = clEnqueueReadImage(queue, memObj, CL_TRUE, origin, region, 0, 0, rawHostMatrix, 0, NULL, NULL);
     if (CL_Err != CL_SUCCESS) {
@@ -579,7 +664,7 @@ INSTRUCTION_DEF writeFloatMatrix(FrameData* cframe) {
     }
 
     size_t origin[] = {0, 0, 0};
-    size_t region[] = {dims[0], dims[1], 1};
+    size_t region[] = {dims[1], dims[0], 1};
     cl_int CL_err = clEnqueueWriteImage(queue, memObj, CL_TRUE, origin, region, 0, 0, rawHostMatrix, 0, NULL, NULL);
 
     if (CL_err != CL_SUCCESS) {
@@ -603,7 +688,7 @@ INSTRUCTION_DEF readFloatMatrix(FrameData* cframe) {
     float_t* rawHostMatrix = (float_t*) malloc(sizeof(float_t)*hostMatrixLens[0]*hostMatrixLens[1]);
 
     size_t origin[] = {0, 0, 0};
-    size_t region[] = {hostMatrixLens[0], hostMatrixLens[1], 1};
+    size_t region[] = {hostMatrixLens[1], hostMatrixLens[0], 1};
 
     int CL_Err = clEnqueueReadImage(queue, memObj, CL_TRUE, origin, region, 0, 0, rawHostMatrix, 0, NULL, NULL);
     if (CL_Err != CL_SUCCESS) {
@@ -652,10 +737,12 @@ INSTRUCTION_DEF createProgram(FrameData* cframe) {
     char* programSource = x_getParam_char_array(api, cframe, 0);
     *programStrings = programSource;
 
-    for (int i = 0; i < numofPlatforms; i++) {
-        progs[i] = clCreateProgramWithSource(*(contexts+i), 1, (const char**) programStrings, NULL, &CL_err);
+    DANA_COMP* danaComp = (DANA_COMP*) api->getParamInt(cframe, 1);
+
+    for (int i = 0; i < getNumOfContexts(danaComp); i++) {
+        CONTEXT_LI* contextItem = getContextByIndex(danaComp, i);
+        progs[i] = clCreateProgramWithSource(contextItem->context, 1, (const char**) programStrings, NULL, &CL_err);
         if (CL_err != CL_SUCCESS) {
-            printf("err when creating program: %d\n", CL_err);
         }
 
         CL_err = CL_SUCCESS;
@@ -669,8 +756,8 @@ INSTRUCTION_DEF createProgram(FrameData* cframe) {
         }
     }
 
-    DanaEl* returnArr = api->makeArray(intArrayGT, numofPlatforms, NULL);
-    for (int i = 0; i < numofPlatforms; i++) {
+    DanaEl* returnArr = api->makeArray(intArrayGT, getNumOfContexts(danaComp), NULL);
+    for (int i = 0; i < getNumOfContexts(danaComp); i++) {
         api->setArrayCellInt(returnArr, i, (uint64_t) progs[i]);
     }
 
@@ -734,6 +821,7 @@ INSTRUCTION_DEF prepareKernel(FrameData* cframe) {
 
     api->returnInt(cframe, (uint64_t) kernel);
 
+
     return RETURN_OK;
 
 }
@@ -757,11 +845,20 @@ INSTRUCTION_DEF runKernel(FrameData* cframe) {
         *(globalWorkers+i) = api->getArrayCellInt(rawOutputDimentions, i);
     }
 
+    cl_event* kernel_event = (cl_event*) malloc(sizeof(cl_event));
+
     cl_int CL_err = CL_SUCCESS;
-    CL_err = clEnqueueNDRangeKernel(queue, kernel, rawArrLen, NULL, globalWorkers, NULL, 0, NULL, NULL);
+    CL_err = clEnqueueNDRangeKernel(queue, kernel, rawArrLen, NULL, globalWorkers, NULL, 0, NULL, kernel_event);
     if (CL_err != CL_SUCCESS) {
         printf("error execing kernel: %d\n", CL_err);
     }
+
+    clWaitForEvents(1, kernel_event);
+
+    //clean up
+    clReleaseEvent(*kernel_event);
+    free(globalWorkers);
+
 
     return RETURN_OK;
 }

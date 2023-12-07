@@ -1,14 +1,21 @@
-component provides linear.LinearOperations requires gpu.LogicalComputeDevice, time.Timer t, io.Output out{
+component provides linear.LinearOperations requires gpu.LogicalComputeDevice, data.DecUtil du, data.IntUtil iu {
 
     LogicalComputeDevice myDev
 
-    LinearOperations:LinearOperations(store LogicalComputeDevice dev) {
-        myDev = dev
-        myDev.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/vaddi.cl", "vaddi")
+    LinearOperations:LinearOperations() {
+        myDev = new LogicalComputeDevice()
+        myDev.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/linear/vaddi.cl", "vaddi")
+        myDev.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/linear/vaddd.cl", "vaddd")
+        myDev.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/linear/vectorscalei.cl", "vscalei")
+        myDev.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/linear/vectorscaled.cl", "vscaled")
+        myDev.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/linear/vcombi.cl", "vcombi")
+        myDev.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/linear/vcombd.cl", "vcombd")
+        myDev.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/linear/lintransd.cl", "lintransd")
+        myDev.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/linear/mattransd.cl", "mattransd")
+        myDev.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/linear/matmupd.cl", "matmupd")
     }
 
     int[] LinearOperations:vectorAddInt(int A[], int B[]) {
-
         myDev.createArray("A", UINT, A.arrayLength)
         myDev.createArray("B", UINT, B.arrayLength)
         myDev.createArray("C", UINT, B.arrayLength)
@@ -27,40 +34,171 @@ component provides linear.LinearOperations requires gpu.LogicalComputeDevice, ti
         myDev.destroyArray("B")
         myDev.destroyArray("C")
 
-
         return resInt
     }
 
     dec[] LinearOperations:vectorAddDec(dec A[], dec B[]) {
-        return null
+        myDev.createArray("A", FLOAT, A.arrayLength)
+        myDev.createArray("B", FLOAT, B.arrayLength)
+        myDev.createArray("C", FLOAT, B.arrayLength)
+
+        myDev.writeArray("A", A, null)
+        myDev.writeArray("B", B, null)
+
+        String params[] = new String[](new String("A"), new String("B"), new String("C"))
+        myDev.runProgram("vaddd", params)
+
+
+        Vector result = myDev.readArray("C")
+        dec resDec[] = result.fvalues
+
+        myDev.destroyArray("A")
+        myDev.destroyArray("B")
+        myDev.destroyArray("C")
+
+        return resDec
     }
 
     int[] LinearOperations:vectorScaleInt(int A[], int S) {
-        return null
+        myDev.createArray("A", UINT, A.arrayLength)
+
+        myDev.writeArray("A", null, A)
+
+        String params[] = new String[](new String("const:$(iu.makeString(S))"), new String("A"))
+        myDev.runProgram("vscalei", params)
+
+        Vector result = myDev.readArray("A")
+        int resInt[] = result.ivalues
+
+        myDev.destroyArray("A")
+
+        return resInt
     }
 
     dec[] LinearOperations:vectorScaleDec(dec A[], dec S) {
-        return null
+        myDev.createArray("A", FLOAT, A.arrayLength)
+
+        myDev.writeArray("A", A, null)
+
+        String params[] = new String[](new String("const:$(du.makeString(S))"), new String("A"))
+        myDev.runProgram("vscaled", params)
+
+        Vector result = myDev.readArray("A")
+        dec resDec[] = result.fvalues
+
+        myDev.destroyArray("A")
+
+        return resDec
     }
 
-    int[] LinearOperations:vectorDotInt(int A[], int B[]) {
-        return null
+    int LinearOperations:vectorDotInt(int A[], int B[]) {
+        return 0
     }
 
-    dec[] LinearOperations:vectorDotDec(dec A[], dec B[]) {
-        return null
+    dec LinearOperations:vectorDotDec(dec A[], dec B[]) {
+        return 0.0
+    }
+
+    int[] LinearOperations:vectorCombinationInt(int A[], int B[]) {
+        myDev.createArray("A", UINT, A.arrayLength)
+        myDev.createArray("B", UINT, B.arrayLength)
+        myDev.createArray("C", UINT, B.arrayLength)
+
+        myDev.writeArray("A", null, A)
+        myDev.writeArray("B", null, B)
+
+        String params[] = new String[](new String("A"), new String("B"), new String("C"))
+        myDev.runProgram("vcombi", params)
+
+        Vector result = myDev.readArray("C")
+        int resInt[] = result.ivalues
+
+        myDev.destroyArray("A")
+        myDev.destroyArray("B")
+        myDev.destroyArray("C")
+
+        return resInt
+    }
+
+    dec[] LinearOperations:vectorCombinationDec(dec A[], dec B[]) {
+        myDev.createArray("A", FLOAT, A.arrayLength)
+        myDev.createArray("B", FLOAT, B.arrayLength)
+        myDev.createArray("C", FLOAT, B.arrayLength)
+
+        myDev.writeArray("A", A, null)
+        myDev.writeArray("B", B, null)
+
+        String params[] = new String[](new String("A"), new String("B"), new String("C"))
+        myDev.runProgram("vcombd", params)
+
+        Vector result = myDev.readArray("C")
+        dec resDec[] = result.fvalues
+
+        myDev.destroyArray("A")
+        myDev.destroyArray("B")
+        myDev.destroyArray("C")
+
+        return resDec 
     }
 
     dec[] LinearOperations:linearTransform(dec T[][], dec V[]) {
-        return null
+        myDev.createArray("V", FLOAT, V.arrayLength)
+        myDev.createArray("Vt", FLOAT, V.arrayLength)
+        myDev.createMatrix("T", FLOAT, 2, new int[](T.arrayLength, T[0].arrayLength))
+
+        myDev.writeArray("V", V, null)
+        myDev.writeMatrix("T", T, null)
+
+        String params[] = new String[](new String("T"), new String("V"), new String("Vt"))
+        myDev.runProgram("lintransd", params)
+
+        Vector result = myDev.readArray("Vt")
+        dec resDec[] = result.fvalues
+
+        myDev.destroyArray("V")
+        myDev.destroyArray("Vt")
+        myDev.destroyMatrix("T")
+
+        return resDec
     }
 
-    dec[] LinearOperations:transpose(dec M[][]) {
-        return null
+    dec[][] LinearOperations:transpose(dec M[][]) {
+        myDev.createMatrix("M", FLOAT, 2, new int[](M.arrayLength, M[0].arrayLength))
+        myDev.createMatrix("Mt", FLOAT, 2, new int[](M[0].arrayLength, M.arrayLength))
+
+        myDev.writeMatrix("M", M, null)
+
+        String params[] = new String[](new String("M"), new String("Mt"))
+        myDev.runProgram("mattransd", params)
+
+        Matrix result = myDev.readMatrix("Mt")
+        dec resDec[][] = result.fvalues
+
+        myDev.destroyMatrix("M")
+        myDev.destroyMatrix("Mt")
+
+        return resDec
     }
 
-    dec[] LinearOperations:matrixMultiply(dec A[][], dec B[][]) {
-        return null
+    dec[][] LinearOperations:matrixMultiply(dec A[][], dec B[][]) {
+        myDev.createMatrix("A", FLOAT, 2, new int[](A.arrayLength, A[0].arrayLength))
+        myDev.createMatrix("B", FLOAT, 2, new int[](B.arrayLength, B[0].arrayLength))
+        myDev.createMatrix("C", FLOAT, 2, new int[](A.arrayLength, B[0].arrayLength))
+
+        myDev.writeMatrix("A", A, null)
+        myDev.writeMatrix("B", B, null)
+
+        String params[] = new String[](new String("A"), new String("B"), new String("C"))
+        myDev.runProgram("matmupd", params)
+
+        Matrix result = myDev.readMatrix("C")
+        dec resDec[][] = result.fvalues
+
+        myDev.destroyMatrix("A")
+        myDev.destroyMatrix("B")
+        myDev.destroyMatrix("C")
+
+        return resDec
     }
 
 }

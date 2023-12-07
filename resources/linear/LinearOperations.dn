@@ -1,13 +1,14 @@
-uses gpu.LogicalComputeDevice
 interface LinearOperations {
-    LinearOperations(store LogicalComputeDevice dev)
+    LinearOperations()
     int[] vectorAddInt(int A[], int B[])
     dec[] vectorAddDec(dec A[], dec B[])
     int[] vectorScaleInt(int A[], int S)
     dec[] vectorScaleDec(dec A[], dec S)
-    int[] vectorDotInt(int A[], int B[])
-    dec[] vectorDotDec(dec A[], dec B[])
+    int vectorDotInt(int A[], int B[])
+    dec vectorDotDec(dec A[], dec B[])
+    int[] vectorCombinationInt(int A[], int B[])
+    dec[] vectorCombinationDec(dec A[], dec B[])
     dec[] linearTransform(dec T[][], dec V[])
-    dec[] transpose(dec M[][])
-    dec[] matrixMultiply(dec A[][], dec B[][])
+    dec[][] transpose(dec M[][])
+    dec[][] matrixMultiply(dec A[][], dec B[][])
 }
