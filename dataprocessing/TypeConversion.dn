@@ -1,12 +1,12 @@
 component provides dataprocessing.TypeConversion requires gpu.LogicalComputeDevice {
     LogicalComputeDevice myDev
 
-    TypeConversion:TypeConversion(store LogicalComputeDevice dev) {
-        myDev = dev
+    TypeConversion:TypeConversion() {
+        myDev = new LogicalComputeDevice()
     }
 
     dec[][] TypeConversion:intToDecMatrix(int matrix[][]){
-        myDev.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/intToDouble.cl", "intToDouble")
+        myDev.loadProgram("./resources-ext/opencl_kernels/dataprocessing/intToDouble.cl", "intToDouble")
 
         myDev.createMatrix("intmat", UINT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
         myDev.writeMatrix("intmat", null, matrix)

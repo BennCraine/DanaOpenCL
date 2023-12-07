@@ -1,12 +1,12 @@
 component provides dataprocessing.Normalisation requires gpu.LogicalComputeDevice, data.IntUtil iu{
     LogicalComputeDevice myDev
 
-    Normalisation:Normalisation(store LogicalComputeDevice dev) {
-        myDev = dev
+    Normalisation:Normalisation() {
+        myDev = new LogicalComputeDevice()
     }
 
     dec[][] Normalisation:matrixDivision(dec matrix[][], int divider) {
-        myDev.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/floatDiv.cl", "floatDiv")
+        myDev.loadProgram("./resources-ext/opencl_kernels/dataprocessing/floatDiv.cl", "floatDiv")
 
         myDev.createMatrix("mat", FLOAT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
         myDev.writeMatrix("mat", matrix, null)

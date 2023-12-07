@@ -4,15 +4,15 @@ component provides linear.LinearOperations requires gpu.LogicalComputeDevice, da
 
     LinearOperations:LinearOperations() {
         myDev = new LogicalComputeDevice()
-        myDev.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/linear/vaddi.cl", "vaddi")
-        myDev.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/linear/vaddd.cl", "vaddd")
-        myDev.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/linear/vectorscalei.cl", "vscalei")
-        myDev.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/linear/vectorscaled.cl", "vscaled")
-        myDev.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/linear/vcombi.cl", "vcombi")
-        myDev.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/linear/vcombd.cl", "vcombd")
-        myDev.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/linear/lintransd.cl", "lintransd")
-        myDev.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/linear/mattransd.cl", "mattransd")
-        myDev.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/linear/matmupd.cl", "matmupd")
+        myDev.loadProgram("./resources-ext/opencl_kernels/linear/vaddi.cl", "vaddi")
+        myDev.loadProgram("./resources-ext/opencl_kernels/linear/vaddd.cl", "vaddd")
+        myDev.loadProgram("./resources-ext/opencl_kernels/linear/vectorscalei.cl", "vscalei")
+        myDev.loadProgram("./resources-ext/opencl_kernels/linear/vectorscaled.cl", "vscaled")
+        myDev.loadProgram("./resources-ext/opencl_kernels/linear/vcombi.cl", "vcombi")
+        myDev.loadProgram("./resources-ext/opencl_kernels/linear/vcombd.cl", "vcombd")
+        myDev.loadProgram("./resources-ext/opencl_kernels/linear/lintransd.cl", "lintransd")
+        myDev.loadProgram("./resources-ext/opencl_kernels/linear/mattransd.cl", "mattransd")
+        myDev.loadProgram("./resources-ext/opencl_kernels/linear/matmupd.cl", "matmupd")
     }
 
     int[] LinearOperations:vectorAddInt(int A[], int B[]) {

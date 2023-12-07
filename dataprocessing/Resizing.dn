@@ -1,8 +1,8 @@
 component provides dataprocessing.Resizing requires gpu.LogicalComputeDevice {
     LogicalComputeDevice myDev
 
-    Resizing:Resizing(store LogicalComputeDevice dev) {
-        myDev = dev
+    Resizing:Resizing() {
+        myDev = new LogicalComputeDevice()
     }
 
     int[][] Resizing:chopColumnI(int matrix[][], int start, int end) {
@@ -17,7 +17,7 @@ component provides dataprocessing.Resizing requires gpu.LogicalComputeDevice {
         indicies[1] = end
         myDev.writeArray("indicies", null, indicies)
 
-        myDev.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/chopColumnI.cl", "chopColumnI")
+        myDev.loadProgram("./resources-ext/opencl_kernels/dataprocessing/chopColumnI.cl", "chopColumnI")
         String params[] = new String[](new String("indicies"), new String("in"), new String("out"))
 
         myDev.runProgram("chopColumnI", params)

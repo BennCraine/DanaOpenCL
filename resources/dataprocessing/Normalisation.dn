@@ -1,5 +1,4 @@
-uses gpu.LogicalComputeDevice
 interface Normalisation {
-    Normalisation(store LogicalComputeDevice dev)
+    Normalisation()
     dec[][] matrixDivision(dec matrix[][], int divider)
 }
