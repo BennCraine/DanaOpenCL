@@ -53,6 +53,9 @@ typedef struct _device_context_map {
 
 typedef struct _context_list_item {
     cl_context context;
+    cl_platform_id platform;
+    cl_device_id* devices;
+    uint8_t numOfDevices;
     struct _context_list_item* next;
 } CONTEXT_LI;
 
@@ -311,7 +314,7 @@ INSTRUCTION_DEF createContext(FrameData* cframe) {
     */
     for (int i = 0; i < numofPlatforms; i++) {
         cl_platform_id platform = *(globalClPlatforms+i);
-        cl_device_id deviceHandlesForThisPlat[50];
+        cl_device_id deviceHandlesForThisPlat[MAX_DEVICES];
         int deviceForPlatCount = 0;
 
         //1
@@ -323,44 +326,48 @@ INSTRUCTION_DEF createContext(FrameData* cframe) {
                 }
             }
         }
+        
+        if (deviceForPlatCount != 0) {
+            CONTEXT_LI* newContextItem = (CONTEXT_LI*) malloc(sizeof(CONTEXT_LI));
+            newContextItem->next = NULL;
+            newContextItem->platform = platform;
 
-        if (deviceForPlatCount == 0) {
-            break;
-        }
-
-        CONTEXT_LI* newContextItem = (CONTEXT_LI*) malloc(sizeof(CONTEXT_LI));
-
-        //2
-        //strip the array down to its mimimum size
-        cl_device_id deviceHandlesForThisPlatCut[deviceForPlatCount];
-        for(int j = 0; j < deviceForPlatCount; j++) {
-            deviceHandlesForThisPlatCut[j] = deviceHandlesForThisPlat[j];
-        }
-
-        //3
-        const cl_context_properties props[] = {CL_CONTEXT_PLATFORM, platform, 0};
-        newContextItem->context = clCreateContext(props, deviceForPlatCount, deviceHandlesForThisPlatCut, NULL, NULL, &CL_Err);
-        if (CL_Err != CL_SUCCESS) {
-            printf("cl not likey\n");
-            printf("code: %d\n", CL_Err);
-        }
-
-        //4
-        for (int j = 0; j < deviceForPlatCount; j++) {
-            DC_MAP* newMapping = (DC_MAP*) malloc(sizeof(DC_MAP));
-            newMapping->device = deviceHandlesForThisPlatCut[j];
-            newMapping->context = newContextItem->context;
-            newMapping->next = NULL;
-            if (danaComp->map == NULL) {
-                danaComp->map = newMapping;
-                danaComp->mapEnd = newMapping;
+            //2
+            //strip the array down to its mimimum size
+            cl_device_id deviceHandlesForThisPlatCut[deviceForPlatCount];
+            newContextItem->devices = (cl_device_id*) malloc(sizeof(cl_device_id)*deviceForPlatCount);
+            newContextItem->numOfDevices = deviceForPlatCount;
+            for(int j = 0; j < deviceForPlatCount; j++) {
+                deviceHandlesForThisPlatCut[j] = deviceHandlesForThisPlat[j];
+                newContextItem->devices[j] = deviceHandlesForThisPlatCut[j];
             }
-            else {
-                danaComp->mapEnd->next = newMapping;
-                danaComp->mapEnd = newMapping;
+
+
+            //3
+            const cl_context_properties props[] = {CL_CONTEXT_PLATFORM, newContextItem->platform, 0};
+            newContextItem->context = clCreateContext(props, newContextItem->numOfDevices, newContextItem->devices, NULL, NULL, &CL_Err);
+            if (CL_Err != CL_SUCCESS) {
+                printf("cl not likey\n");
+                printf("code: %d\n", CL_Err);
             }
+
+            //4
+            for (int j = 0; j < newContextItem->numOfDevices; j++) {
+                DC_MAP* newMapping = (DC_MAP*) malloc(sizeof(DC_MAP));
+                newMapping->device = deviceHandlesForThisPlatCut[j];
+                newMapping->context = newContextItem->context;
+                newMapping->next = NULL;
+                if (danaComp->map == NULL) {
+                    danaComp->map = newMapping;
+                    danaComp->mapEnd = newMapping;
+                }
+                else {
+                    danaComp->mapEnd->next = newMapping;
+                    danaComp->mapEnd = newMapping;
+                }
+            }
+            addNewContext(danaComp, newContextItem);
         }
-        addNewContext(danaComp, newContextItem);
     }
 
     return RETURN_OK;
@@ -746,7 +753,7 @@ INSTRUCTION_DEF createProgram(FrameData* cframe) {
         }
 
         CL_err = CL_SUCCESS;
-        CL_err = clBuildProgram(progs[i], *(numOfDevicesPerPlatform+i), *(devices+i), NULL, NULL, NULL);
+        CL_err = clBuildProgram(progs[i], contextItem->numOfDevices, contextItem->devices, NULL, NULL, NULL);
         if (CL_err != CL_SUCCESS) {
             size_t len;
             char buf[2048];
@@ -762,6 +769,7 @@ INSTRUCTION_DEF createProgram(FrameData* cframe) {
     }
 
     api->returnEl(cframe, returnArr);
+
 
     return RETURN_OK;
 }
