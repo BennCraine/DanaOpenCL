@@ -36,11 +36,9 @@ component provides gpu.ComputeDistributionManager requires gpu.ComputeManager,
         nat.createContext_w(deviceIDs[0])
 
         //create one queue per physicalDevice
-        for (int i = 0; i < deviceIDs.arrayLength; i++) {
-            int queue_cl = nat.createSynchQueue_w(deviceIDs[i])
-            ComputeQueue newQ = new ComputeQueue(queue_cl, new Queue(), physicalDevices[i], deviceIDs[i])
-            synchQueues.add(newQ)
-        }
+        int queue_cl = nat.createSynchQueue_w(deviceIDs[0])
+        ComputeQueue newQ = new ComputeQueue(queue_cl, new Queue(), physicalDevices[0], deviceIDs[0])
+        synchQueues.add(newQ)
     }
 
     HashTableItem[] ComputeDistributionManager:getReadWriteQueues(store HashTable rw[]) {

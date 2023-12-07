@@ -1,0 +1,8 @@
+interface RNG {
+    RNG()
+    void setSeed(int seed)
+    dec[][] randomMatrixDec(dec lo, dec hi)
+    int[][] randomMatrixInt(int lo, int hi)
+    dec[] randomVectorDec(dec lo, dec hi)
+    int[] randomVectorInt(dec lo, dec hi)
+}

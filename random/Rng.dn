@@ -1,0 +1,37 @@
+component provides random.RNG requires gpu.LogicalComputeDevice {
+    LogicalComputeDevice myDev
+    int mySeed
+
+    RNG:RNG() {
+        mySeed = 1
+        myDev = new LogicalComputeDevice()
+        myDev.loadProgram("./resources-ext/opencl_kernels/random/randmatd.cl", "randmatd")
+    }
+
+    void RNG:setSeed(int seed) {
+        mySeed = seed
+    }
+
+    dec[][] RNG:randomMatrixDec(int rows, int cols, dec lo, dec hi) {
+        myDev.createMatrix("A", FLOAT, 2, new int[](rows, cols))
+        myDev.createArray("B", UINT, 3)
+
+        int lohi[] = new int[](lo, hi, mySeed)
+        myDev.writeArray("B", null, lohi)
+
+        String params[] = new String[](new String("B"), new String("A"))
+        myDev.runProgram("randmatd", params)
+
+        Matrix m = myDev.readMatrix("A")
+        dec returnVal[][] = m.fvalues
+
+        myDev.destroyMatrix("A")
+        myDev.destroyArray("B")
+
+        return returnVal
+    }
+
+    int[][] RNG:randomMatrixInt(int lo, int hi) {return null}
+    dec[] RNG:randomVectorDec(dec lo, dec hi) {return null}
+    int[] RNG:randomVectorInt(dec lo, dec hi) {return null}
+}

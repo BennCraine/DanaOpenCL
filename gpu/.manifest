@@ -1,5 +1,5 @@
 {
 "defaultLinks":	[
-    {"interface": "ComputeDistributionManager", "component": "IntelDefaultDistManager"}
+    {"interface": "ComputeDistributionManager", "component": "NvidiaDistManager"}
     ]
 }
