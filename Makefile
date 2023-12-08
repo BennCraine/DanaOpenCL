@@ -132,6 +132,7 @@ opencl:
 	dnc ./dataprocessing/Normalisation.dn
 	dnc ./dataprocessing/Resizing.dn
 	dnc ./linear/LinearOperations.dn
+	dnc ./random/RNG.dn
 	$(CC) -g -s ./resources-ext/OpenCLLib_dni.c $(API_PATH)/vmi_util.c ./resources-ext/OpenCLLib.c -o OpenCLLib[$(PLATFORM).$(CHIP)].dnl -lOpenCL $(STD_INCLUDE) $(CCFLAGS)
 	$(CP_CMD) OpenCLLib[$(PLATFORM).$(CHIP)].dnl "./resources-ext/"
 	rm OpenCLLib[$(PLATFORM).$(CHIP)].dnl

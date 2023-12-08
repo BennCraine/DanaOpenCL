@@ -18,20 +18,17 @@ uint getInt(uint top, uint seed) {
     return seed % top;
 }
 
-__kernel void randmatd(__global long unsigned int* seed_in, __global float* lohi, write_only image2d_t matrix) {
+__kernel void randmati(__global long unsigned int* seed_in, __global long unsigned int* lohi, write_only image2d_t matrix) {
     int row = get_global_id(0);
     int col = get_global_id(1);
 
     uint seed = (seed_in[0] + (row*row) + col)*(seed_in[0] + row + col);
 
-    float diff = lohi[1] - lohi[0];
-    uint discreteStepsMax = getInt(10001, seed);
-    uint discreteStepsTaken = getInt(discreteStepsMax+1, seed);
+    uint diff = lohi[1] - lohi[0];
 
-    float increments = diff / discreteStepsMax;
-    float add = increments * discreteStepsTaken;
+    uint rnd = getInt(diff+1, seed);
 
-    float rnd = lohi[0] + add;
+    rnd = lohi[0] + rnd;
 
-    write_imagef(matrix, (int2)(row, col), (float4)(rnd, 0, 0, 0));
+    write_imageui(matrix, (int2)(row, col), (uint4)(rnd, 0, 0, 0));
 }

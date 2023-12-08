@@ -18,11 +18,10 @@ uint getInt(uint top, uint seed) {
     return seed % top;
 }
 
-__kernel void randmatd(__global long unsigned int* seed_in, __global float* lohi, write_only image2d_t matrix) {
+__kernel void randvecd(__global long unsigned int* seed_in, __global float* lohi, __global float* v) {
     int row = get_global_id(0);
-    int col = get_global_id(1);
 
-    uint seed = (seed_in[0] + (row*row) + col)*(seed_in[0] + row + col);
+    uint seed = (seed_in[0] + (row*row))*(seed_in[0] + row);
 
     float diff = lohi[1] - lohi[0];
     uint discreteStepsMax = getInt(10001, seed);
@@ -33,5 +32,5 @@ __kernel void randmatd(__global long unsigned int* seed_in, __global float* lohi
 
     float rnd = lohi[0] + add;
 
-    write_imagef(matrix, (int2)(row, col), (float4)(rnd, 0, 0, 0));
+    v[row] = rnd;
 }
