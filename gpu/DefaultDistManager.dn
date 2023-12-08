@@ -27,49 +27,18 @@ component provides gpu.ComputeDistributionManager requires gpu.ComputeManager,
         physicalDevices = hardwareInfo.getComputeDevices()
         int deviceIDs[] = hardwareInfo.getComputeDeviceIDs()
 
-        //Search for device names starting with 'Intel'
-        bool hits[] = new bool[physicalDevices.arrayLength]
-        int hitCount = 0
-        for (int i = 0; i < physicalDevices.arrayLength; i++) {
-            hits[i] = su.startsWith(physicalDevices[i].string, "Intel")
-            hitCount+=hits[i]
-        }
-        int deviceIDsKeep[] = new int[hitCount]
-        String physicalDevicesKeep[] = new String[hitCount]
-        int k = 0
-        for (int i = 0; i < hitCount; i++) {
-            bool next = false
-            while (next == false) {
-                next = hits[k]
-                k++
-            }
-            deviceIDsKeep[i] = deviceIDs[k-1]
-            physicalDevicesKeep[i] = physicalDevices[k-1]
-        }
-
-        deviceIDs = deviceIDsKeep
-        physicalDevices = physicalDevicesKeep
-
         physicalDevicesIDs = new HashTable()
 
-        //map device names and device IDs
-        for (int i = 0; i < deviceIDs.arrayLength; i++) {
-            ChandleWrapper hand = new ChandleWrapper(deviceIDs[i])
-            out.println(physicalDevices[i].string)
-            physicalDevicesIDs.put(physicalDevices[i].string, hand) 
-            ChandleWrapper e = physicalDevicesIDs.get(physicalDevices[i].string)
-            int x = e.handle
-        }
+        //grab the first available device
+        ChandleWrapper handle = new ChandleWrapper(deviceIDs[0])
+        physicalDevicesIDs.put(physicalDevices[0].string, handle)
 
-        //create opencl context with all devices available
-        nat.createContext_w(deviceIDs)
+        nat.createContext_w(deviceIDs[0])
 
         //create one queue per physicalDevice
-        for (int i = 0; i < deviceIDs.arrayLength; i++) {
-            int queue_cl = nat.createSynchQueue_w(deviceIDs[i])
-            ComputeQueue newQ = new ComputeQueue(queue_cl, new Queue(), physicalDevices[i], deviceIDs[i])
-            synchQueues.add(newQ)
-        }
+        int queue_cl = nat.createSynchQueue_w(deviceIDs[0])
+        ComputeQueue newQ = new ComputeQueue(queue_cl, new Queue(), physicalDevices[0], deviceIDs[0])
+        synchQueues.add(newQ)
     }
 
     HashTableItem[] ComputeDistributionManager:getReadWriteQueues(store HashTable rw[]) {

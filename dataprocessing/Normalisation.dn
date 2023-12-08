@@ -1,18 +1,17 @@
-component provides dataprocessing.Normalisation requires gpu.LogicalComputeDevice, data.IntUtil iu{
+component provides dataprocessing.Normalisation requires gpu.LogicalComputeDevice, data.DecUtil du{
     LogicalComputeDevice myDev
 
-    Normalisation:Normalisation(store LogicalComputeDevice dev) {
-        myDev = dev
+    Normalisation:Normalisation() {
+        myDev = new LogicalComputeDevice()
+        myDev.loadProgram("./resources-ext/opencl_kernels/dataprocessing/floatDiv.cl", "floatDiv")
     }
 
-    dec[][] Normalisation:matrixDivision(dec matrix[][], int divider) {
-        myDev.loadProgram("/home/ben/Documents/PhD/DanaOpenCL/resources-ext/opencl_kernels/floatDiv.cl", "floatDiv")
-
+    dec[][] Normalisation:matrixDivision(dec matrix[][], dec divider) {
         myDev.createMatrix("mat", FLOAT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
         myDev.writeMatrix("mat", matrix, null)
         myDev.createMatrix("out", FLOAT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
 
-        String params[] = new String[](new String("const:$(iu.makeString(divider))"), new String("mat"), new String("out"))
+        String params[] = new String[](new String("const:$(du.makeString(divider))"), new String("mat"), new String("out"))
         myDev.runProgram("floatDiv", params)
 
         Matrix m = myDev.readMatrix("out")
@@ -20,7 +19,7 @@ component provides dataprocessing.Normalisation requires gpu.LogicalComputeDevic
 
         myDev.destroyMatrix("mat")
         myDev.destroyMatrix("out")
-        myDev.destroyArray("const:$(iu.makeString(divider))")
+        myDev.destroyArray("const:$(du.makeString(divider))")
 
         return returnVal
     }

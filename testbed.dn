@@ -1,7 +1,26 @@
-component provides App requires linear.LinearOperations, data.adt.List, io.Output out, data.IntUtil iu, data.DecUtil du{
+component provides App requires linear.LinearOperations, 
+                                dataprocessing.Resizing, 
+                                dataprocessing.Normalisation, 
+                                dataprocessing.TypeConversion, 
+                                random.RNG, 
+                                data.adt.List, 
+                                io.Output out, 
+                                data.IntUtil iu, 
+                                data.DecUtil du,
+                                time.Calendar cal,
+                                time.TimeUnix tu
+                                {
     int App:main(AppParam params[]) {
         LinearOperations ops = new LinearOperations()
         LinearOperations opst = new LinearOperations()
+
+        Resizing rz = new Resizing()
+        Normalisation nz = new Normalisation()
+        TypeConversion tc = new TypeConversion()
+        RNG rng = new RNG()
+        DateTime curDt = cal.getTime()
+        int uTime = tu.toUnixTime(curDt)
+        rng.setSeed(uTime)
 
         int a[] = new int[10]
         int b[] = new int[10]
@@ -82,6 +101,92 @@ component provides App requires linear.LinearOperations, data.adt.List, io.Outpu
             }
             out.print("\n")
         }
+
+        int intMat[][] = new int[][](new int[](1, 2, 5, 5), new int[](1, 2,10, 10), new int[](1, 2, 15, 15))
+        dec decMat[][] = tc.intToDecMatrix(intMat)
+        for (int i = 0; i < intMat.arrayLength; i++) {
+            for (int k = 0; k < intMat[0].arrayLength; k++) {
+                out.print("| $(du.makeString(decMat[i][k])) | ")
+            }
+            out.print("\n")
+        }
+        out.print("\n")
+
+        decMat = rz.chopColumnDec(decMat, 0, 2)
+        for (int i = 0; i < decMat.arrayLength; i++) {
+            for (int k = 0; k < decMat[0].arrayLength; k++) {
+                out.print("| $(du.makeString(decMat[i][k])) | ")
+            }
+            out.print("\n")
+        }
+        out.print("\n")
+
+        intMat = rz.chopColumnInt(intMat, 0, 2)
+        for (int i = 0; i < decMat.arrayLength; i++) {
+            for (int k = 0; k < decMat[0].arrayLength; k++) {
+                out.print("| $(iu.makeString(intMat[i][k])) | ")
+            }
+            out.print("\n")
+        }
+        out.print("\n")
+
+        decMat = rz.chopRowDec(decMat, 1, 2)
+        for (int i = 0; i < decMat.arrayLength; i++) {
+            for (int k = 0; k < decMat[0].arrayLength; k++) {
+                out.print("| $(du.makeString(decMat[i][k])) | ")
+            }
+            out.print("\n")
+        }
+        out.print("\n")
+
+        intMat = rz.chopRowInt(intMat, 1, 2)
+        for (int i = 0; i < intMat.arrayLength; i++) {
+            for (int k = 0; k < intMat[0].arrayLength; k++) {
+                out.print("| $(iu.makeString(intMat[i][k])) | ")
+            }
+            out.print("\n")
+        }
+        out.print("\n")
+
+        decMat = nz.matrixDivision(decMat, 0.5) 
+        for (int i = 0; i < decMat.arrayLength; i++) {
+            for (int k = 0; k < decMat[0].arrayLength; k++) {
+                out.print("| $(du.makeString(decMat[i][k])) | ")
+            }
+            out.print("\n")
+        }
+        out.print("\n")
+
+        dec randVecd[] = rng.randomVectorDec(10, -0.5, 0.5)
+        for(int i = 0; i < randVecd.arrayLength; i++) {
+            out.print("| $(du.makeString(randVecd[i])) | ")
+        }
+        out.print("\n")
+
+        int randVeci[] = rng.randomVectorInt(10, 0, 20)
+        for(int i = 0; i < randVeci.arrayLength; i++) {
+            out.print("| $(iu.makeString(randVeci[i])) | ")
+        }
+        out.print("\n")
+
+        int randMati[][] = rng.randomMatrixInt(3, 3, 10, 15)
+        for (int i = 0; i < randMati.arrayLength; i++) {
+            for (int k = 0; k < randMati[0].arrayLength; k++) {
+                out.print("| $(iu.makeString(randMati[i][k])) | ")
+            }
+            out.print("\n")
+        }
+        out.print("\n")
+
+        dec randMat[][] = rng.randomMatrixDec(5, 5, -15.5, 15.5)
+        for (int i = 0; i < randMat.arrayLength; i++) {
+            for (int k = 0; k < randMat[0].arrayLength; k++) {
+                out.print("| $(du.makeString(randMat[i][k])) | ")
+            }
+            out.print("\n")
+        }
+        out.print("\n")
+
 
         return 0
     }
