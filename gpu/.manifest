@@ -3,3 +3,4 @@
     {"interface": "ComputeDistributionManager", "component": "DefaultDistManager"}
     ]
 }
+//Edit this file if you want to use a different implimentation of ComputeDistributionManager

@@ -1,9 +1,0 @@
-/*
-    {"description" : "Container that holds the values read from an external compute device's 2-D buffer, allows for the read functions of this interface to be type agnostic"}
-*/
-data Matrix {
-    /* {"@description" : "The integer values read from an external compute device"} */
-    int ivalues[][]
-    /* {"@description" : "The float values (converted to fixed point) read from an external compute device"} */
-    dec fvalues[][]
-}

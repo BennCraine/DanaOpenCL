@@ -92,11 +92,19 @@ component provides linear.LinearOperations requires gpu.LogicalComputeDevice, da
     }
 
     int LinearOperations:vectorDotInt(int A[], int B[]) {
-        return 0
+        int sum = 0
+        for (int i = 0; i < A.arrayLength; i++) {
+            sum+=A[i]*B[i]
+        }
+        return sum
     }
 
     dec LinearOperations:vectorDotDec(dec A[], dec B[]) {
-        return 0.0
+        dec sum = 0
+        for (int i = 0; i < A.arrayLength; i++) {
+            sum+=A[i]*B[i]
+        }
+        return sum
     }
 
     int[] LinearOperations:vectorCombinationInt(int A[], int B[]) {

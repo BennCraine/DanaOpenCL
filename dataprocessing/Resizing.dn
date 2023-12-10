@@ -1,4 +1,4 @@
-component provides dataprocessing.Resizing requires gpu.LogicalComputeDevice, data.IntUtil iu, io.Output out{
+component provides dataprocessing.Resizing requires gpu.LogicalComputeDevice, data.IntUtil iu {
     LogicalComputeDevice myDev
 
     Resizing:Resizing() {

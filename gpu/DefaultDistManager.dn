@@ -3,9 +3,6 @@ component provides gpu.ComputeDistributionManager requires gpu.ComputeStats,
                                                             data.adt.List,
                                                             data.adt.HashTable,
                                                             data.adt.Queue,
-                                                            data.IntUtil iu,
-                                                            io.Output out,
-                                                            data.StringUtil su
                                                             {
 
     ComputeStats hardwareInfo
@@ -41,11 +38,13 @@ component provides gpu.ComputeDistributionManager requires gpu.ComputeStats,
         synchQueues.add(newQ)
     }
 
+    //return all devices managed by this object so that the caller can create read/write queues for them
     HashTableItem[] ComputeDistributionManager:getReadWriteQueues(store HashTable rw[]) {
         HashTableItem devicesMap[] = physicalDevicesIDs.getContents()
         return devicesMap
     }
 
+    //return the first and only device device
     HashTableItem ComputeDistributionManager:mallocWhichDevice() {
         HashTableItem keyValue = new HashTableItem()
         keyValue.key = physicalDevices[0].string
@@ -53,6 +52,7 @@ component provides gpu.ComputeDistributionManager requires gpu.ComputeStats,
         return keyValue
     }
 
+    //given a device get its synchronous command queue
     ComputeQueue getQueueByDevice(int device) {
         for (int i = 0; i < synchQueues.getLength(); i++) {
             ComputeQueue q = synchQueues.getIndex(i)
@@ -64,12 +64,20 @@ component provides gpu.ComputeDistributionManager requires gpu.ComputeStats,
     }
 
     void ComputeDistributionManager:execProgram(ChandleWrapperArray kernelHandles, HashTable memoryObjects, int outputDims[]) {
+        //the memoryObjects to be used as parameters for this kernel
         HashTableItem memObjs[] = memoryObjects.getContents()
 
+        //the prepared kernel handles
         ChandleWrapper kernelHandlesArr[] = kernelHandles.array
         int rawKerHandles[] = new int[kernelHandlesArr.arrayLength]
+
+        //some kernel handles may be null which indicated the underlying API failed to build them
+        //this is usually because one or more of the parameters are stored on a device different to the device
+        //the kernel is built for
         bool kerPrepSuccess[] = new bool[kernelHandlesArr.arrayLength]
 
+        //check which kernel handles have non null values
+        //mark the corrisponding cell in kerPrepSuccess as true
         for (int i = 0; i < rawKerHandles.arrayLength; i++) {
             rawKerHandles[i] = kernelHandlesArr[i].handle
             if (rawKerHandles[i] != 0) {
@@ -83,12 +91,18 @@ component provides gpu.ComputeDistributionManager requires gpu.ComputeStats,
         int succCount = 0 
         int kerIndex = 0
         int kerToExec = 0
+        //count how many kernels were built successfully
+        // and mark the the index of the most recently succesful kernel in kerIndex
         for (int k = 0; k < kerPrepSuccess.arrayLength; k++) {
             if (kerPrepSuccess[k]) {
                 succCount += 1
                 kerIndex = k
             }
         }
+
+        //if there was only one successfully built kernel execute that one
+        //its handle will be in the rawKerHandles array and its index will be
+        // stored in kerIndex
         if (succCount == 1) {
             kerToExec = rawKerHandles[kerIndex]
             String device = memObjs[0].value
@@ -97,9 +111,17 @@ component provides gpu.ComputeDistributionManager requires gpu.ComputeStats,
             ComputeQueue q = getQueueByDevice(dev)
             nat.runKernel_w(kerToExec, q.queue_cl, outputDims)
         }
+
+        // if no kernels where succesful report a fatal error
+        // though other implimentation on ComputeDistributionManager can handle this
+        // you would have to copy the parameter contents onto one device and attempt to
+        // rebuild the kernel
         else if (succCount == 0) {
 
         }
+        // if more than one kernel was built succesfully
+        // execute the kernel in the rawKerHandles array at
+        // the index pointed to by kerIndex
         else { //succCount > 1
             kerToExec = rawKerHandles[kerIndex]
             String device = memObjs[0].value
@@ -108,8 +130,6 @@ component provides gpu.ComputeDistributionManager requires gpu.ComputeStats,
             ComputeQueue q = getQueueByDevice(dev)
             nat.runKernel_w(kerToExec, q.queue_cl, outputDims)
         }
-        return
     }
-
 }
 
