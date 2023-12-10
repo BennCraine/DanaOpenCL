@@ -1,4 +1,4 @@
-component provides gpu.ComputeDistributionManager requires gpu.ComputeManager,
+component provides gpu.ComputeDistributionManager requires gpu.ComputeStats,
                                                             gpu.Compute,
                                                             data.adt.List,
                                                             data.adt.HashTable,
@@ -8,7 +8,7 @@ component provides gpu.ComputeDistributionManager requires gpu.ComputeManager,
                                                             data.StringUtil su
                                                             {
 
-    ComputeManager hardwareInfo
+    ComputeStats hardwareInfo
     Compute nat
 
     List asynchQueues
@@ -17,7 +17,7 @@ component provides gpu.ComputeDistributionManager requires gpu.ComputeManager,
     String physicalDevices[]
     HashTable physicalDevicesIDs
 
-    ComputeDistributionManager:ComputeDistributionManager(store ComputeManager physicalCompute, store Compute nativeCompute) {
+    ComputeDistributionManager:ComputeDistributionManager(store ComputeStats physicalCompute, store Compute nativeCompute) {
         hardwareInfo = physicalCompute
         nat = nativeCompute
 

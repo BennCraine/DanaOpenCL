@@ -1,8 +1,22 @@
+/*
+{"description" : "A set of functions for generating random vectors and matricies. <b> CAUTION: Please inspect the underlying implinetation of this interface before using the psudo-random numbers for security sensitive applications! </b>"}
+*/
 interface RNG {
+    /* {"@description" : "Allows the implimenting component to initilise any external compute device it intendes to use"} */
     RNG()
+
+    /* {"@description" : "Set a 'seed' value for the underlying random number generator. Depending on the implimenting component and your intended use case, this value should be something like the current time"} */
     void setSeed(int seed)
+
+    /* {"@description" : "Returns a decimal matrix of 'rows' number of rows and 'cols' number of columns which cells are populated with psudo-random numbers between 'lo' and 'hi' in value"} */
     dec[][] randomMatrixDec(int rows, int cols, dec lo, dec hi)
+
+    /* {"@description" : "Returns a integer matrix of 'rows' number of rows and 'cols' number of columns which cells are populated with psudo-random numbers between 'lo' and 'hi' in value"} */
     int[][] randomMatrixInt(int rows, int cols, int lo, int hi)
+
+    /* {"@description" : "Returns a 'len' dimentioanl decimal vector for which its cells are populated with psudo-random numbers between 'lo' and 'hi' in value"} */
     dec[] randomVectorDec(int len, dec lo, dec hi)
+
+    /* {"@description" : "Returns a 'len' dimentioanl integer vector for which its cells are populated with psudo-random numbers between 'lo' and 'hi' in value"} */
     int[] randomVectorInt(int len, int lo, int hi)
 }

@@ -16,9 +16,9 @@ component provides linear.LinearOperations requires gpu.LogicalComputeDevice, da
     }
 
     int[] LinearOperations:vectorAddInt(int A[], int B[]) {
-        myDev.createArray("A", UINT, A.arrayLength)
-        myDev.createArray("B", UINT, B.arrayLength)
-        myDev.createArray("C", UINT, B.arrayLength)
+        myDev.createArray("A", Compute.UINT, A.arrayLength)
+        myDev.createArray("B", Compute.UINT, B.arrayLength)
+        myDev.createArray("C", Compute.UINT, B.arrayLength)
 
         myDev.writeArray("A", null, A)
         myDev.writeArray("B", null, B)
@@ -38,9 +38,9 @@ component provides linear.LinearOperations requires gpu.LogicalComputeDevice, da
     }
 
     dec[] LinearOperations:vectorAddDec(dec A[], dec B[]) {
-        myDev.createArray("A", FLOAT, A.arrayLength)
-        myDev.createArray("B", FLOAT, B.arrayLength)
-        myDev.createArray("C", FLOAT, B.arrayLength)
+        myDev.createArray("A", Compute.FLOAT, A.arrayLength)
+        myDev.createArray("B", Compute.FLOAT, B.arrayLength)
+        myDev.createArray("C", Compute.FLOAT, B.arrayLength)
 
         myDev.writeArray("A", A, null)
         myDev.writeArray("B", B, null)
@@ -60,7 +60,7 @@ component provides linear.LinearOperations requires gpu.LogicalComputeDevice, da
     }
 
     int[] LinearOperations:vectorScaleInt(int A[], int S) {
-        myDev.createArray("A", UINT, A.arrayLength)
+        myDev.createArray("A", Compute.UINT, A.arrayLength)
 
         myDev.writeArray("A", null, A)
 
@@ -76,7 +76,7 @@ component provides linear.LinearOperations requires gpu.LogicalComputeDevice, da
     }
 
     dec[] LinearOperations:vectorScaleDec(dec A[], dec S) {
-        myDev.createArray("A", FLOAT, A.arrayLength)
+        myDev.createArray("A", Compute.FLOAT, A.arrayLength)
 
         myDev.writeArray("A", A, null)
 
@@ -100,9 +100,9 @@ component provides linear.LinearOperations requires gpu.LogicalComputeDevice, da
     }
 
     int[] LinearOperations:vectorCombinationInt(int A[], int B[]) {
-        myDev.createArray("A", UINT, A.arrayLength)
-        myDev.createArray("B", UINT, B.arrayLength)
-        myDev.createArray("C", UINT, B.arrayLength)
+        myDev.createArray("A", Compute.UINT, A.arrayLength)
+        myDev.createArray("B", Compute.UINT, B.arrayLength)
+        myDev.createArray("C", Compute.UINT, B.arrayLength)
 
         myDev.writeArray("A", null, A)
         myDev.writeArray("B", null, B)
@@ -121,9 +121,9 @@ component provides linear.LinearOperations requires gpu.LogicalComputeDevice, da
     }
 
     dec[] LinearOperations:vectorCombinationDec(dec A[], dec B[]) {
-        myDev.createArray("A", FLOAT, A.arrayLength)
-        myDev.createArray("B", FLOAT, B.arrayLength)
-        myDev.createArray("C", FLOAT, B.arrayLength)
+        myDev.createArray("A", Compute.FLOAT, A.arrayLength)
+        myDev.createArray("B", Compute.FLOAT, B.arrayLength)
+        myDev.createArray("C", Compute.FLOAT, B.arrayLength)
 
         myDev.writeArray("A", A, null)
         myDev.writeArray("B", B, null)
@@ -142,9 +142,9 @@ component provides linear.LinearOperations requires gpu.LogicalComputeDevice, da
     }
 
     dec[] LinearOperations:linearTransform(dec T[][], dec V[]) {
-        myDev.createArray("V", FLOAT, V.arrayLength)
-        myDev.createArray("Vt", FLOAT, V.arrayLength)
-        myDev.createMatrix("T", FLOAT, 2, new int[](T.arrayLength, T[0].arrayLength))
+        myDev.createArray("V", Compute.FLOAT, V.arrayLength)
+        myDev.createArray("Vt", Compute.FLOAT, V.arrayLength)
+        myDev.createMatrix("T", Compute.FLOAT, 2, new int[](T.arrayLength, T[0].arrayLength))
 
         myDev.writeArray("V", V, null)
         myDev.writeMatrix("T", T, null)
@@ -163,8 +163,8 @@ component provides linear.LinearOperations requires gpu.LogicalComputeDevice, da
     }
 
     dec[][] LinearOperations:transpose(dec M[][]) {
-        myDev.createMatrix("M", FLOAT, 2, new int[](M.arrayLength, M[0].arrayLength))
-        myDev.createMatrix("Mt", FLOAT, 2, new int[](M[0].arrayLength, M.arrayLength))
+        myDev.createMatrix("M", Compute.FLOAT, 2, new int[](M.arrayLength, M[0].arrayLength))
+        myDev.createMatrix("Mt", Compute.FLOAT, 2, new int[](M[0].arrayLength, M.arrayLength))
 
         myDev.writeMatrix("M", M, null)
 
@@ -181,9 +181,9 @@ component provides linear.LinearOperations requires gpu.LogicalComputeDevice, da
     }
 
     dec[][] LinearOperations:matrixMultiply(dec A[][], dec B[][]) {
-        myDev.createMatrix("A", FLOAT, 2, new int[](A.arrayLength, A[0].arrayLength))
-        myDev.createMatrix("B", FLOAT, 2, new int[](B.arrayLength, B[0].arrayLength))
-        myDev.createMatrix("C", FLOAT, 2, new int[](A.arrayLength, B[0].arrayLength))
+        myDev.createMatrix("A", Compute.FLOAT, 2, new int[](A.arrayLength, A[0].arrayLength))
+        myDev.createMatrix("B", Compute.FLOAT, 2, new int[](B.arrayLength, B[0].arrayLength))
+        myDev.createMatrix("C", Compute.FLOAT, 2, new int[](A.arrayLength, B[0].arrayLength))
 
         myDev.writeMatrix("A", A, null)
         myDev.writeMatrix("B", B, null)

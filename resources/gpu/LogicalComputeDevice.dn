@@ -1,39 +1,77 @@
-/*
- {"description" : "Display number of OpenCL platforms available"}
-*/
 uses data.String
-uses data.adt.Queue
-uses data.adt.List
 uses gpu.Compute
 
-const int RUN_KERNEL = 1
-
-data Vector {
-    int ivalues[]
-    dec fvalues[]
-}
-
+//this seems to cause a error in the doc gen when descriptions are given, so leaving out for now
 data Matrix {
     int ivalues[][]
     dec fvalues[][]
 }
 
+/*
+    {"description" : "Container that holds the values read from an external compute device's 1-D buffer, allows for the read functions of this interface to be type agnostic"}
+*/
+data Vector {
+    /* {"@description" : "The integer values read from an external compute device"} */
+    int ivalues[]
+    /* {"@description" : "The float values (converted to fixed point) read from an external compute device"} */
+    dec fvalues[]
+}
+
+
+/* 
+    {"description" : "Container that contains all the information needed to access a buffer on a compute device"}
+*/
+data OpenMemArea {
+    /* {"@description" : "The native library handle that points to the memory area used for the buffer"} */
+    ChandleWrapper hand
+    /* {"@description" : "The name of the device the buffer is allocated on"} */
+    String device
+    /* {"@description" : "The number of dimentions of the buffer"} */
+    int dims
+    /* {"@description" : "The length of each dimention of the buffer"} */
+    int lengths[]
+    /* {"@description" : "The type of the data stored in the buffer. Either Compute.UINT or Compute.FLOAT"} */
+    int type
+}
+
+/*
+    {"description" : "Interface that provides a high level abstraction available to the caller to enable them to use compute devices on the system that are not the host device"}
+*/
 interface LogicalComputeDevice {
+
+    /* {"@description" : "Contructor, allows the implimenting component to initilise the LogicalComputeDevice with programs and data it will need to operate"} */
     LogicalComputeDevice()
 
-    void createArray(char name[], int types, int length)
+    /* {"@description" : "Creates a 1-D buffer with 'length' cells on some compute device available to the system. The user of this interface will use the given 'name' parameter to access this buffer so they should track the name appropriatly"} */
+    void createArray(char name[], int type, int length)
+
+    /* {"@description" : "Creates a n-D (n = 'dim') buffer with a size equal to the product of the values given by 'lengths' on some compute device available to the system. The user of this interface will use the given 'name' parameter to access this buffer so they should track the name appropriatly"} */
     void createMatrix(char name[], int type, int dim, int lengths[])
 
+    /* {"@description" : "Releases the memory on the external compute device in which the 1-D buffer refered to by 'name' is stored"} */
     void destroyArray(char name[])
+
+    /* {"@description" : "Releases the memory on the external compute device in which the n-D buffer refered to by 'name' is stored"} */
     void destroyMatrix(char name[])
 
+    /* {"@description" : "Writes either the fvales or the ivalues to the 1-D buffer refered to by 'name'"} */
     void writeArray(char name[], dec fvalues[], int ivalues[])
+    /* {"@description" : "Reads the values from the 1-D buffer refered to by 'name'. The result of the read operation will be stored in one of the fields of the returned Vector structure"} */
     Vector readArray(char name[])
 
+    /* {"@description" : "Writes either the fvales or the ivalues to the n-D buffer refered to by 'name'"} */
     void writeMatrix(char name[], dec fvalues[][], int ivalues[][])
+
+    /* {"@description" : "Reads the values from the n-D buffer refered to by 'name'. The result of the read operation will be stored in one of the fields of the returned Matrix structure"} */
     Matrix readMatrix(char name[])
 
+    /* {"@description" : "Gives this LogicalComputeDevice the ability to execute the source code in the file given by 'path'. The 'name' parameter will be used as the first parameter of the 'runProgram' function of this interface"} */
     void loadProgram(char path[], char name[])
+
+    /* {"@description" : "Returns the names of all programs loaded onto this LogicalComputeDevice"} */
     String[] getPrograms()
+
+    /* {"@description" : "Attempts to run the program refered to by the first parameter, using the values 'params' as arguments for the program being run. 'params' should be a set of strings that match names of buffers that have been created on the LogicalComputeDevice"} */
     void runProgram(char program[], String params[])
+
 }

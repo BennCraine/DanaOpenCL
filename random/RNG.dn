@@ -16,9 +16,9 @@ component provides random.RNG requires gpu.LogicalComputeDevice {
     }
 
     dec[][] RNG:randomMatrixDec(int rows, int cols, dec lo, dec hi) {
-        myDev.createMatrix("A", FLOAT, 2, new int[](rows, cols))
-        myDev.createArray("B", FLOAT, 2)
-        myDev.createArray("seed", UINT, 1)
+        myDev.createMatrix("A", Compute.FLOAT, 2, new int[](rows, cols))
+        myDev.createArray("B", Compute.FLOAT, 2)
+        myDev.createArray("seed", Compute.UINT, 1)
 
         dec lohi[] = new dec[](lo, hi)
         myDev.writeArray("B", lohi, null)
@@ -40,9 +40,9 @@ component provides random.RNG requires gpu.LogicalComputeDevice {
     }
 
     int[][] RNG:randomMatrixInt(int rows, int cols, int lo, int hi) {
-        myDev.createMatrix("A", UINT, 2, new int[](rows, cols))
-        myDev.createArray("B", UINT, 2)
-        myDev.createArray("seed", UINT, 1)
+        myDev.createMatrix("A", Compute.UINT, 2, new int[](rows, cols))
+        myDev.createArray("B", Compute.UINT, 2)
+        myDev.createArray("seed", Compute.UINT, 1)
 
         int lohi[] = new int[](lo, hi)
         myDev.writeArray("B", null, lohi)
@@ -63,9 +63,9 @@ component provides random.RNG requires gpu.LogicalComputeDevice {
         return returnVal
     }
     dec[] RNG:randomVectorDec(int len, dec lo, dec hi) {
-        myDev.createArray("A", FLOAT, len)
-        myDev.createArray("B", FLOAT, 2)
-        myDev.createArray("seed", UINT, 1)
+        myDev.createArray("A", Compute.FLOAT, len)
+        myDev.createArray("B", Compute.FLOAT, 2)
+        myDev.createArray("seed", Compute.UINT, 1)
 
         dec lohi[] = new dec[](lo, hi)
         myDev.writeArray("B", lohi, null)
@@ -87,9 +87,9 @@ component provides random.RNG requires gpu.LogicalComputeDevice {
     }
 
     int[] RNG:randomVectorInt(int len, int lo, int hi) {
-        myDev.createArray("A", UINT, len)
-        myDev.createArray("B", UINT, 2)
-        myDev.createArray("seed", UINT, 1)
+        myDev.createArray("A", Compute.UINT, len)
+        myDev.createArray("B", Compute.UINT, 2)
+        myDev.createArray("seed", Compute.UINT, 1)
 
         int lohi[] = new int[](lo, hi)
         myDev.writeArray("B", null, lohi)

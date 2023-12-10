@@ -1,6 +1,6 @@
 component provides LogicalComputeDevice requires gpu.Compute,
                                                 gpu.ComputeDistributionManager,
-                                                gpu.ComputeManager,
+                                                gpu.ComputeStats,
                                                 data.adt.List,
                                                 data.adt.HashTable,
                                                 data.adt.Queue,
@@ -23,7 +23,7 @@ component provides LogicalComputeDevice requires gpu.Compute,
 
     LogicalComputeDevice:LogicalComputeDevice() {
         nat = new Compute()
-        ComputeManager cm = new ComputeManager(nat)
+        ComputeStats cm = new ComputeStats(nat)
         distManager = new ComputeDistributionManager(cm, nat)
 
         readQueues = new HashTable()
@@ -85,10 +85,10 @@ component provides LogicalComputeDevice requires gpu.Compute,
         ComputeQueue q = writeQueues.get(device.string)
         int clQueue = q.queue_cl
 
-        if (inMem.type == FLOAT && ivalues == null && fvalues.arrayLength == inMem.lengths[0]) {
+        if (inMem.type == Compute.FLOAT && ivalues == null && fvalues.arrayLength == inMem.lengths[0]) {
             nat.writeFloatArray_w(clQueue, clMemObj, fvalues)
         }
-        else if (inMem.type == UINT && fvalues == null && ivalues.arrayLength == inMem.lengths[0]) {
+        else if (inMem.type == Compute.UINT && fvalues == null && ivalues.arrayLength == inMem.lengths[0]) {
             nat.writeIntArray_w(clQueue, clMemObj, ivalues) 
         }
         else {
@@ -107,7 +107,7 @@ component provides LogicalComputeDevice requires gpu.Compute,
         ComputeQueue q = readQueues.get(device.string)
         int clQueue = q.queue_cl
 
-        if (inMem.type == FLOAT) {
+        if (inMem.type == Compute.FLOAT) {
             dec buf[] = new dec[inMem.lengths[0]]
 
             buf = nat.readFloatArray_w(clQueue, clMemObj, inMem.lengths[0])
@@ -135,10 +135,10 @@ component provides LogicalComputeDevice requires gpu.Compute,
         ComputeQueue q = writeQueues.get(device.string)
         int clQueue = q.queue_cl
 
-        if (inMem.type == FLOAT && ivalues == null && fvalues.arrayLength == inMem.lengths[0] && fvalues[1].arrayLength == inMem.lengths[1]) {
+        if (inMem.type == Compute.FLOAT && ivalues == null && fvalues.arrayLength == inMem.lengths[0] && fvalues[1].arrayLength == inMem.lengths[1]) {
             nat.writeFloatMatrix_w(clQueue, memObj, fvalues) 
         }
-        else if (inMem.type == UINT && fvalues == null && ivalues.arrayLength == inMem.lengths[0] && ivalues[1].arrayLength == inMem.lengths[1]) {
+        else if (inMem.type == Compute.UINT && fvalues == null && ivalues.arrayLength == inMem.lengths[0] && ivalues[1].arrayLength == inMem.lengths[1]) {
             nat.writeIntMatrix_w(clQueue, memObj, ivalues) 
         }
         else {
@@ -159,7 +159,7 @@ component provides LogicalComputeDevice requires gpu.Compute,
         ComputeQueue q = readQueues.get(device.string)
         int clQueue = q.queue_cl
 
-        if (inMem.type == FLOAT) {
+        if (inMem.type == Compute.FLOAT) {
             dec buf[][] = new dec[inMem.lengths[0]][inMem.lengths[1]]
             buf = nat.readFloatMatrix_w(clQueue, memObj, buf)
             m.fvalues = buf
@@ -318,13 +318,13 @@ component provides LogicalComputeDevice requires gpu.Compute,
         for (int i = 0; i < params.arrayLength; i++) {
             if (isConst(params[i].string)) {
                 if (isFloat(params[i].string)) {
-                    createArray(params[i].string, FLOAT, 1)
+                    createArray(params[i].string, Compute.FLOAT, 1)
                     dec vals[] = new dec[1]
                     vals[0] = getDecConst(params[i].string)
                     writeArray(params[i].string, vals, null)          
                 }
                 else {
-                    createArray(params[i].string, UINT, 1)
+                    createArray(params[i].string, Compute.UINT, 1)
                     int vals[] = new int[1]
                     vals[0] = getIntConst(params[i].string)
                     writeArray(params[i].string, null, vals)          

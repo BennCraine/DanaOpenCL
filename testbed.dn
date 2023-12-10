@@ -8,7 +8,8 @@ component provides App requires linear.LinearOperations,
                                 data.IntUtil iu, 
                                 data.DecUtil du,
                                 time.Calendar cal,
-                                time.TimeUnix tu
+                                time.TimeUnix tu,
+                                stats.Matrix mat
                                 {
     int App:main(AppParam params[]) {
         LinearOperations ops = new LinearOperations()
@@ -93,7 +94,12 @@ component provides App requires linear.LinearOperations,
         dec mulOne[][] = new dec[][](new dec[](1.0,2.0,3.0), new dec[](4.0,5.0,6.0))
         dec mulTwo[][] = new dec[][](new dec[](7.0,8.0), new dec[](9.0,10.0), new dec[](11.0, 12.0))
 
+        out.println("on dev")
         dec mulTogether[][] = ops.matrixMultiply(mulOne, mulTwo)
+        out.println("off dev")
+        out.println("on host")
+        dec mulTogetherHost[][] = mat.multiply(mulOne, mulTwo)
+        out.println("off host")
 
         for (int i = 0; i < mulTogether.arrayLength; i++) {
             for (int k = 0; k < mulTogether[0].arrayLength; k++) {
@@ -178,7 +184,8 @@ component provides App requires linear.LinearOperations,
         }
         out.print("\n")
 
-        dec randMat[][] = rng.randomMatrixDec(5, 5, -15.5, 15.5)
+        dec randMat[][] = rng.randomMatrixDec(1000, 1000, -15.5, 15.5)
+        /*
         for (int i = 0; i < randMat.arrayLength; i++) {
             for (int k = 0; k < randMat[0].arrayLength; k++) {
                 out.print("| $(du.makeString(randMat[i][k])) | ")
@@ -186,6 +193,7 @@ component provides App requires linear.LinearOperations,
             out.print("\n")
         }
         out.print("\n")
+        */
 
 
         return 0

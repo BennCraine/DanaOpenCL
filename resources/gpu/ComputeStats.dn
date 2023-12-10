@@ -1,0 +1,28 @@
+uses data.String
+uses gpu.Compute
+
+/*
+    {"description" : "An interface to query compute devices about their current state and their compute abilities e.g supported types and % of memory in use on device"}
+*/
+interface ComputeStats {
+    /* {"@description" : "Constructor, ensures the Compute component is share with this objects creator"} */
+    ComputeStats(store Compute nativeCompute)
+
+    /* {"@description" : "Returns the Compute component associated with this object"} */
+    Compute getNative()
+
+    /* {"@description" : "Queries the system for available compute platforms, e.g CUDA"} */
+	void findPlatforms()
+
+    /* {"@description" : "Returns all the devices (by name) available to the system"} */
+    String[] getComputeDevices()
+
+    /* {"@description" : "Returns all the devices (by id) available to the system"} */
+    int[] getComputeDeviceIDs()
+
+    /* {"@description" : "Makes the device given by 'deviceID' unavailable to any objects that share a Compute object with this ComputeStats object"} */
+    void plugInDevice(int deviceID)
+
+    /* {"@description" : "Makes the device given by 'deviceID' available to any objects that share a Compute object with this ComputeStats object"} */
+    void unplugDevice(int deviceID)
+}

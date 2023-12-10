@@ -56,12 +56,12 @@ component provides gpu.Compute requires native OpenCLLib lib,
         return lib.createSynchQueue(device, myDanaComp)
     }
     int Compute:createArray_w(int device, int length, int type) {
-        if (type == FLOAT) {
-            int arr = lib.createArray(device, length, FLOAT, myDanaComp)
+        if (type == Compute.FLOAT) {
+            int arr = lib.createArray(device, length, Compute.FLOAT, myDanaComp)
             return arr
         }
-        else if (type == UINT) {
-            int arr = lib.createArray(device, length, UINT, myDanaComp)
+        else if (type == Compute.UINT) {
+            int arr = lib.createArray(device, length, Compute.UINT, myDanaComp)
             return arr
         }
         else {
@@ -69,12 +69,12 @@ component provides gpu.Compute requires native OpenCLLib lib,
         }
     }
     int Compute:createMatrix_w(int device, int width, int height, int type) {
-        if (type == FLOAT) {
-            int mat = lib.createMatrix(device, width, height, FLOAT, myDanaComp)
+        if (type == Compute.FLOAT) {
+            int mat = lib.createMatrix(device, width, height, Compute.FLOAT, myDanaComp)
             return mat
         }
-        else if (type == UINT) {
-            int mat = lib.createMatrix(device, width, height, UINT, myDanaComp)
+        else if (type == Compute.UINT) {
+            int mat = lib.createMatrix(device, width, height, Compute.UINT, myDanaComp)
             return mat
         }
         else {

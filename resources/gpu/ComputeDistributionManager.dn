@@ -1,28 +1,35 @@
 uses data.String
 uses data.adt.HashTable
-uses gpu.ComputeManager
+uses gpu.ComputeStats
 uses data.adt.Queue
 
+/*
+    {"description" : "A container that has all the information needed to call the functions related to read/write and excute commands in the gpu.Compute interface. It also contained a Dana Queue instance to provide to other components that may wish to use the queue without exposing native library handles to them."}
+*/
 data ComputeQueue {
+    /* {"@description" : "Native library handle that identifies a queue"} */
     int queue_cl
+    /* {"@description" : "Dana Queue optionally used to allow other components to interact with the native queue indirectly"} */
     Queue q
+    /* {"@description" : "The name of the device this queue is associated with"} */
     String physicalDevice
+    /* {"@description" : "The native library handle of the device this queue is associated with"} */
     int physicalDeviceID
 }
 
-data ChandleWrapper {
-    int handle
-}
-
-data ChandleWrapperArray {
-    ChandleWrapper array[]
-}
-
+/*
+    {"description" : "This interface provides functions intended to manage the distribution of memory allocation and kernel execution across the compute devices made available to it"}
+*/
 interface ComputeDistributionManager {
-    ComputeDistributionManager(store ComputeManager physicalCompute, store Compute nativeCompute)
+    /* {"@description" : "Constructor. Ensures a Compute interface implimentation is shared between this object and its creator"} */
+    ComputeDistributionManager(store ComputeStats physicalCompute, store Compute nativeCompute)
 
+    /* {"@description" : "Returns all the read and write queues inside this component"} */
     HashTableItem[] getReadWriteQueues(store HashTable rw[])
 
+    /* {"@description" : "Tells a caller who wishes to create a buffer on a compute device which compute device to allocate the buffer on"} */
     HashTableItem mallocWhichDevice()
+
+    /* {"@description" : "Attempts to execute one kernel from the array 'kernelHandles' and makes its desicion based on the compute devices that contain the buffers given by 'memoryObjects'. A successful kernel execution will be executed with a number of threads given by the product of all values in 'outputDims' arranged in a outputDims[0] * outputDims[0+i] * ... * outputDims[n] structure"} */
     void execProgram(ChandleWrapperArray kernelHandles, HashTable memoryObjects, int outputDims[])
 }

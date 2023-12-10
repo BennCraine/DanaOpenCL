@@ -10,12 +10,12 @@ component provides dataprocessing.Resizing requires gpu.LogicalComputeDevice, da
     }
 
     int[][] Resizing:chopColumnInt(int matrix[][], int start, int end) {
-        myDev.createMatrix("in", UINT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
+        myDev.createMatrix("in", Compute.UINT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
         myDev.writeMatrix("in", null, matrix)
 
-        myDev.createMatrix("out", UINT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength-(end-start)))
+        myDev.createMatrix("out", Compute.UINT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength-(end-start)))
 
-        myDev.createArray("indicies", UINT, 2)
+        myDev.createArray("indicies", Compute.UINT, 2)
         int indicies[] = new int[2]
         indicies[0] = start
         indicies[1] = end
@@ -36,12 +36,12 @@ component provides dataprocessing.Resizing requires gpu.LogicalComputeDevice, da
     }
 
     dec[][] Resizing:chopColumnDec(dec matrix[][], int start, int end) {
-        myDev.createMatrix("in", FLOAT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
+        myDev.createMatrix("in", Compute.FLOAT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
         myDev.writeMatrix("in", matrix, null)
 
-        myDev.createMatrix("out", FLOAT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength-(end-start)))
+        myDev.createMatrix("out", Compute.FLOAT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength-(end-start)))
 
-        myDev.createArray("indicies", UINT, 2)
+        myDev.createArray("indicies", Compute.UINT, 2)
         int indicies[] = new int[2]
         indicies[0] = start
         indicies[1] = end
@@ -62,12 +62,12 @@ component provides dataprocessing.Resizing requires gpu.LogicalComputeDevice, da
     }
 
     int[][] Resizing:chopRowInt(int matrix[][], int start, int end) {
-        myDev.createMatrix("in", UINT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
+        myDev.createMatrix("in", Compute.UINT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
         myDev.writeMatrix("in", null, matrix)
 
-        myDev.createMatrix("out", UINT, 2, new int[](matrix.arrayLength-(end-start), matrix[0].arrayLength))
+        myDev.createMatrix("out", Compute.UINT, 2, new int[](matrix.arrayLength-(end-start), matrix[0].arrayLength))
 
-        myDev.createArray("indicies", UINT, 2)
+        myDev.createArray("indicies", Compute.UINT, 2)
         int indicies[] = new int[2]
         indicies[0] = start
         indicies[1] = end
@@ -88,12 +88,12 @@ component provides dataprocessing.Resizing requires gpu.LogicalComputeDevice, da
     }
 
     dec[][] Resizing:chopRowDec(dec matrix[][], int start, int end) {
-        myDev.createMatrix("in", FLOAT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
+        myDev.createMatrix("in", Compute.FLOAT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
         myDev.writeMatrix("in", matrix, null)
 
-        myDev.createMatrix("out", FLOAT, 2, new int[](matrix.arrayLength-(end-start), matrix[0].arrayLength))
+        myDev.createMatrix("out", Compute.FLOAT, 2, new int[](matrix.arrayLength-(end-start), matrix[0].arrayLength))
 
-        myDev.createArray("indicies", UINT, 2)
+        myDev.createArray("indicies", Compute.UINT, 2)
         int indicies[] = new int[2]
         indicies[0] = start
         indicies[1] = end

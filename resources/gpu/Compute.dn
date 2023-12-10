@@ -1,44 +1,90 @@
 uses data.String
 
-const int FLOAT = 0
-const int UINT = 1
-
+/*
+{ "description" : "Container for a native library handle to be stored"}
+*/
 data ChandleWrapper {
+    /* {"@description" : "A native library handle represented as a 64-bit unsigned integer"} */
     int handle
 }
 
+/*
+{ "description" : "Container for more that one native library handle to be stored in an array"}
+*/
 data ChandleWrapperArray {
+    /* {"@description" : "The array of containers that store native library handles"} */
     ChandleWrapper array[]
 }
-
-data OpenMemArea {
-    ChandleWrapper hand
-    String device
-    int dims
-    int lengths[]
-    int type
-}
-
+/*
+{"description" : "This interface allows the user to interact with compute devices available to the system"}
+*/
 interface Compute {
+
+    /* {"@description" : "Flag to indicate to used the float type on the compute device. What 'float' means precicly depends on the implimenting component and what compute device is being used"} */
+    const int FLOAT = 0
+    /* {"@description" : "Flag to indicate to used the unsigned integer type on the compute device. What 'unsigned integer' means precicly depends on the implimenting component and what compute device is being used"} */
+    const int UINT = 1
+
+    /* {"@description" : "Initlises whatever API is being used in the native library to communicated with the compute devices"} */
     void init_w()
+
+    /* {"@description" : "Asks the native library what compute platforms are supported. For example CUDA or Intel Iris."} */
 	void findPlatforms_w()
+
+    /* {"@description" : "Asks the native libraray to return all the raw handles to all the available compute devices on the system"} */
     int[] getComputeDeviceIDs_w()
+
+    /* {"@description" : "Asks the native library to return all the names of the compute devices available on the system"} */
     String[] getComputeDevices_w()
+
+    /* {"@description" : "Asks the native library to create some 'state' that contains all the devices given by the integer array parameter"} */
     void createContext_w(int devices[])
+
+    /* {"@description" : "Asks the native library to create a asynchronous queue that points to the compute device given by 'device'. These queues are used to request read/write and execution commands to the compute device. Returns a native library handle to that Queue"} */
     int createAsynchQueue_w(int device)
+
+    /* {"@description" : "Asks the native library to create a synchronous queue that points to the compute device given by 'device'. These queues are used to request read/write and execution commands to the compute device. Returns a native libraray handle to that Queue"} */
     int createSynchQueue_w(int device)
+
+    /* {"@description" : "Asks the native library to create a 1-D buffer of 'length' size and of the type given by 'type' on the compute device given by 'device'. Returns a native library handle to that buffer."} */
     int createArray_w(int device, int length, int type)
+
+    /* {"@description" : "Asks the native library to create a 2-D buffer of 'width' * 'height' size and of the type given by 'type' on the compute device given by 'device'. Returns a native library handle to that buffer."} */
     int createMatrix_w(int device, int width, int height, int type)
+
+    /* {"@description" : "Asks the native library to deallocate the memory on a compute device pointed to by 'memObj_cl'"} */
     void destroyMemoryArea_w(int memObj_cl)
+
+    /* {"@description" : "Asks the native library to compile the source code given by 'source' for all platforms/compute devices available to the system. Returns an array of native library handles to the compiled programs."} */
     int[] createProgram_w(char source[])
+
+    /* {"@description" : "Asks the native library to write to the buffer given by 'memObj_cl' the values given by 'values' through the queue given by 'queue_cl'."} */
     void writeIntArray_w(int queue_cl, int memObj_cl, int values[])
+
+    /* {"@description" : "Asks the native library to read the values in the buffer (up to the length of the 'buf' array) given by 'memObj_cl' through the queue given by 'queue_cl' and return the values to the caller"} */
     int[] readIntArray_w(int queue_cl, int memObj_cl, int buf[])
+
+    /* {"@description" : "Asks the native library to write to the buffer given by 'memObj_cl' the values given by 'values' through the queue given by 'queue_cl'."} */
     void writeFloatArray_w(int queue_cl, int memObj_cl, dec values[])
+
+    /* {"@description" : "Asks the native library to read the values (up to the index given by 'len') in the buffer given by 'memObj_cl' through the queue given by 'queue_cl' and return the values to the caller"} */
     dec[] readFloatArray_w(int queue_cl, int memObj_cl, int len)
+
+    /* {"@description" : "Asks the native library to write to the buffer given by 'memObj_cl' the values given by 'buf' through the queue given by 'queue_cl'."} */
     void writeIntMatrix_w(int queue_cl, int memObj_cl, int buf[][])
+
+    /* {"@description" : "Asks the native library to read the values in the buffer (up to the width given by buf[0] and height given by buf[1]) given by 'memObj_cl' through the queue given by 'queue_cl' and return the values to the caller"} */
     int[][] readIntMatrix_w(int queue_cl, int memObj_cl, int buf[][])
+
+    /* {"@description" : "Asks the native library to write to the buffer given by 'memObj_cl' the values given by 'buf' through the queue given by 'queue_cl'."} */
     void writeFloatMatrix_w(int queue_cl, int memObj_cl, dec buf[][])
+
+    /* {"@description" : "Asks the native library to read the values in the buffer (up to the width given by buf[0] and height given by buf[1]) given by 'memObj_cl' through the queue given by 'queue_cl' and return the values to the caller"} */
     dec[][] readFloatMatrix_w(int queue_cl, int memObj_cl, dec buf[][])
+
+    /* {"@description" : "Asks the native library to prepare the program given by 'clProghandle' to be executed with the parameters given by 'paramHandles'. 'program' is a char array that gives the name of the program, which should match the function name given to the kernel in the source code provided in the createProgram_w function of this interface."} */
     int prepareKernel_w(int clProghandle, int paramHandles[], int paramCount, char program[])
+
+    /* {"@description" : "Asks the native library to execute the kernel given by 'clKernel' through the queue given by 'queue_cl' and execute it on a set of threads with dimention and size outputDims[0] * outputDims[0+i] * ..., * outputDims[n]"} */
     void runKernel_w(int clKernel, int queue_cl, int outputDims[])
 }

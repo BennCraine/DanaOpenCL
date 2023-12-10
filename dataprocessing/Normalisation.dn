@@ -7,9 +7,9 @@ component provides dataprocessing.Normalisation requires gpu.LogicalComputeDevic
     }
 
     dec[][] Normalisation:matrixDivision(dec matrix[][], dec divider) {
-        myDev.createMatrix("mat", FLOAT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
+        myDev.createMatrix("mat", Compute.FLOAT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
         myDev.writeMatrix("mat", matrix, null)
-        myDev.createMatrix("out", FLOAT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
+        myDev.createMatrix("out", Compute.FLOAT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
 
         String params[] = new String[](new String("const:$(du.makeString(divider))"), new String("mat"), new String("out"))
         myDev.runProgram("floatDiv", params)

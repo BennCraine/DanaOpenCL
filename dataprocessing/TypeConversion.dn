@@ -7,10 +7,10 @@ component provides dataprocessing.TypeConversion requires gpu.LogicalComputeDevi
     }
 
     dec[][] TypeConversion:intToDecMatrix(int matrix[][]){
-        myDev.createMatrix("intmat", UINT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
+        myDev.createMatrix("intmat", Compute.UINT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
         myDev.writeMatrix("intmat", null, matrix)
 
-        myDev.createMatrix("floatmat", FLOAT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
+        myDev.createMatrix("floatmat", Compute.FLOAT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
 
         String params[] = new String[](new String("intmat"), new String("floatmat"))
         myDev.runProgram("intToDouble", params)
