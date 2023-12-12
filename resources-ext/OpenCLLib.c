@@ -1,5 +1,15 @@
 //Written by Ben Craine, 2023
 
+/*
+ * IMPORTANT OPENCL DEFINITIONS
+ * Platform - An opencl implimentation, e.g CUDA, Intel Iris.
+ * Context - A set of devices (belonging to the same platform), Command Queues, Kernels and Memory objects
+ * Device - A physical compute device available to opencl
+ * Command Queue - A queue that points to a single device, requests to execute operations on a device are sent through a command queue that points to that device
+ * Kernels - A compiled, executable program associated with a set of parameters (Memory objects), built for a specific device/platform
+ * Memory objects - The opencl abstraction of a reserved part of memory on a device that can be read/written or passed as a kernel parameter using opencl API calls
+ */
+
 //std lib headers
 #include <stddef.h>
 #include <stdint.h>
