@@ -55,12 +55,12 @@ interface LogicalComputeDevice {
     void destroyMatrix(char name[])
 
     /* {"@description" : "Writes either the fvales or the ivalues to the 1-D buffer refered to by 'name'"} */
-    void writeArray(char name[], dec fvalues[], int ivalues[])
+    bool writeArray(char name[], dec fvalues[], int ivalues[])
     /* {"@description" : "Reads the values from the 1-D buffer refered to by 'name'. The result of the read operation will be stored in one of the fields of the returned Vector structure"} */
     Vector readArray(char name[])
 
     /* {"@description" : "Writes either the fvales or the ivalues to the n-D buffer refered to by 'name'"} */
-    void writeMatrix(char name[], dec fvalues[][], int ivalues[][])
+    bool writeMatrix(char name[], dec fvalues[][], int ivalues[][])
 
     /* {"@description" : "Reads the values from the n-D buffer refered to by 'name'. The result of the read operation will be stored in one of the fields of the returned Matrix structure"} */
     Matrix readMatrix(char name[])

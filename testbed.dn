@@ -9,9 +9,15 @@ component provides App requires linear.LinearOperations,
                                 data.DecUtil du,
                                 time.Calendar cal,
                                 time.TimeUnix tu,
+                                gpu.LogicalComputeDevice,
                                 stats.Matrix mat
                                 {
     int App:main(AppParam params[]) {
+        LogicalComputeDevice ldc = new LogicalComputeDevice()
+        ldc.createMatrix("M", Compute.FLOAT, 2, new int[](10, 10))
+        int ints[][]= new int[][](new int[](1,4,2))
+        ldc.writeMatrix("M", null, ints)
+
         LinearOperations ops = new LinearOperations()
         LinearOperations opst = new LinearOperations()
 

@@ -30,9 +30,10 @@ component provides gpu.ComputeDistributionManager requires gpu.ComputeStats,
         ChandleWrapper handle = new ChandleWrapper(deviceIDs[0])
         physicalDevicesIDs.put(physicalDevices[0].string, handle)
 
+        //tell the native libraray we want to use this device
         nat.createContext_w(deviceIDs[0])
 
-        //create one queue per physicalDevice
+        //create a command queue for our device
         int queue_cl = nat.createSynchQueue_w(deviceIDs[0])
         ComputeQueue newQ = new ComputeQueue(queue_cl, new Queue(), physicalDevices[0], deviceIDs[0])
         synchQueues.add(newQ)
@@ -117,7 +118,7 @@ component provides gpu.ComputeDistributionManager requires gpu.ComputeStats,
         // you would have to copy the parameter contents onto one device and attempt to
         // rebuild the kernel
         else if (succCount == 0) {
-
+            throw new Exception("All kernels failed to build, cannot execute program.")
         }
         // if more than one kernel was built succesfully
         // execute the kernel in the rawKerHandles array at
