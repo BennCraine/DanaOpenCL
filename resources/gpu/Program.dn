@@ -1,0 +1,13 @@
+uses ExtMemory
+
+/*
+{"description" : "This interface allows the user to interact with compute devices available to the system"}
+*/
+interface Program {
+
+    /* {"@description" : "Initlises whatever API is being used in the native library to communicated with the compute devices"} */
+    Program(store Compute device, char functionName[], char source[])
+
+    void setParameters(ExtMemory parameters[])
+
+}

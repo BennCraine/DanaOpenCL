@@ -1,0 +1,15 @@
+uses Compute
+
+/*
+{"description" : "This interface allows the user to interact with compute devices available to the system"}
+*/
+interface ArrayDec extends ExtMemory {
+
+    /* {"@description" : "Initlises whatever API is being used in the native library to communicated with the compute devices"} */
+    ArrayDec(store Compute device, int length)
+
+    void write(dec content[])
+
+    dec[] read()
+    
+}

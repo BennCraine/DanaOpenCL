@@ -1,5 +1,11 @@
 {
 "defaultLinks":	[
+    {"interface": "Program", "component": "Compute"},
+    {"interface": "ComputeInfo", "component": "Compute"},
+    {"interface": "ArrayInt", "component": "Compute"},
+    {"interface": "ArrayDec", "component": "Compute"},
+    {"interface": "MatrixInt", "component": "Compute"},
+    {"interface": "MatrixDec", "component": "Compute"},
     {"interface": "ComputeDistributionManager", "component": "DefaultDistManager"}
     ]
 }

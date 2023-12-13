@@ -24,98 +24,231 @@ interface OpenCLLib {
     void runKernel(int clKernel, int queue_cl, int outputDims[])
 }
 
-component provides gpu.Compute requires native OpenCLLib lib, 
-                                        io.Output out, 
-                                        io.TextFile,
-                                        data.adt.Queue, 
-                                        data.adt.List, 
-                                        data.adt.HashTable, 
-                                        data.IntUtil iu {
+const int FLOAT = 0
+const int UINT = 1
 
-    int myDanaComp
+component provides ComputeInfo, Compute(Destructor), Program(Destructor), ArrayInt(Destructor), ArrayDec(Destructor), MatrixInt(Destructor), MatrixDec(Destructor) requires native OpenCLLib lib, io.Output out {
 
-    void Compute:init_w() {
-        myDanaComp = lib.init()
+    implementation ComputeInfo {
+
+        /* {"@description" : "Returns all the devices (by name) available to the system"} */
+        String[] ComputeInfo:getDevices()
+            {
+            return lib.getComputeDevices()
+            }
     }
-	void Compute:findPlatforms_w() {
-        lib.findPlatforms()
+    
+    implementation Compute {
+        int handle
+        char device[]
+        int deviceID
+        int queueHandle
+
+        /* {"@description" : "Initlises whatever API is being used in the native library to communicated with the compute devices"} */
+        Compute:Compute(char dev[])
+            {
+            handle = lib.init()
+
+            device = dev
+
+            int deviceIDs[] = lib.getComputeDeviceIDs()
+            String devices[] = lib.getComputeDevices()
+
+            for (int i = 0; i < devices.arrayLength; i++)
+                {
+                if (devices[i].string == device)
+                    {
+                    deviceID = deviceIDs[i]
+                    break
+                    }
+                }
+            
+            lib.createContext(deviceID, handle)
+
+            queueHandle = lib.createSynchQueue(deviceID, handle)
+            }
+        
+        char[] Compute:getDevice()
+            {
+            return device
+            }
+
+        /* {"@description" : "Asks the native library to execute the kernel given by 'clKernel' through the queue given by 'queue_cl' and execute it on a set of threads with dimention and size outputDims[0] * outputDims[0+i] * ..., * outputDims[n]"} */
+        void Compute:runProgram(Program p, int outputDims[])
+            {
+            int khandle = lib.prepareKernel(p.phandle, p.paramHandles, p.paramHandles.arrayLength, p.functionName)
+            lib.runKernel(khandle, queueHandle, outputDims)
+            }
+        
+        void Destructor:destroy()
+            {
+            //destroy context?
+            //destroy queue?
+            }
     }
-    int[] Compute:getComputeDeviceIDs_w() {
-        return lib.getComputeDeviceIDs()
+
+    implementation Program {
+        int phandle
+        char program[]
+        char functionName[]
+        int paramHandles[]
+        
+        Program:Program(store Compute device, char fName[], char source[])
+            {
+            int res[] = lib.createProgram(source, device.handle)
+            phandle = res[0]
+            program = source
+            functionName = fName
+            }
+
+        void Program:setParameters(ExtMemory parameters[])
+            {
+            paramHandles = new int[parameters.arrayLength]
+            for (int i = 0; i < paramHandles.arrayLength; i++)
+                {
+                paramHandles[i] = parameters[i].getMemoryLoc()
+                }
+            }
+        
+        void Destructor:destroy()
+            {
+            //destroy phandle?
+            }
     }
-    String[] Compute:getComputeDevices_w() {
-        return lib.getComputeDevices()
+
+    implementation ArrayInt {
+        int handle
+        Compute dev
+        int len
+
+        ArrayInt:ArrayInt(store Compute device, int length)
+            {
+            handle = lib.createArray(device.deviceID, length, UINT, device.handle)
+            len = length
+            dev = device
+            }
+
+        void ArrayInt:write(int content[])
+            {
+            lib.writeIntArray(dev.queueHandle, handle, content)
+            }
+
+        int[] ArrayInt:read()
+            {
+            return lib.readIntArray(dev.queueHandle, handle, len) //buf??
+            }
+        
+        int ArrayInt:getMemoryLoc()
+            {
+            return handle
+            }
+        
+        void Destructor:destroy()
+            {
+            lib.destroyMemoryArea(handle)
+            }
     }
-    void Compute:createContext_w(int devices[]) {
-        lib.createContext(devices, myDanaComp)
+
+    implementation ArrayDec {
+        int handle
+        Compute dev
+        int len
+
+        ArrayDec:ArrayDec(store Compute device, int length)
+            {
+            handle = lib.createArray(device.deviceID, length, FLOAT, device.handle)
+            dev = device
+            len = length
+            }
+
+        void ArrayDec:write(dec content[])
+            {
+            lib.writeFloatArray(dev.queueHandle, handle, content)
+            }
+
+        dec[] ArrayDec:read()
+            {
+            return lib.readFloatArray(dev.queueHandle, handle, len)
+            }
+        
+        int ArrayDec:getMemoryLoc()
+            {
+            return handle
+            }
+        
+        void Destructor:destroy()
+            {
+            lib.destroyMemoryArea(handle)
+            }
     }
-    int Compute:createAsynchQueue_w(int device) {
-        return lib.createAsynchQueue(device, myDanaComp)
+
+    implementation MatrixInt {
+        int handle
+        Compute dev
+        int w
+        int h
+
+        MatrixInt:MatrixInt(store Compute device, int width, int height)
+            {
+            handle = lib.createMatrix(device.deviceID, width, height, UINT, device.handle)
+            dev = device
+            w = width
+            h = height
+            }
+
+        void MatrixInt:write(int content[][])
+            {
+            lib.writeIntMatrix(dev.queueHandle, handle, content)
+            }
+
+        int[][] MatrixInt:read()
+            {
+            return lib.readIntMatrix(dev.queueHandle, handle, null)
+            }
+        
+        int MatrixInt:getMemoryLoc()
+            {
+            return handle
+            }
+        
+        void Destructor:destroy()
+            {
+            lib.destroyMemoryArea(handle)
+            }
     }
-    int Compute:createSynchQueue_w(int device) {
-        return lib.createSynchQueue(device, myDanaComp)
-    }
-    int Compute:createArray_w(int device, int length, int type) {
-        if (type == Compute.FLOAT) {
-            int arr = lib.createArray(device, length, Compute.FLOAT, myDanaComp)
-            return arr
-        }
-        else if (type == Compute.UINT) {
-            int arr = lib.createArray(device, length, Compute.UINT, myDanaComp)
-            return arr
-        }
-        else {
-            return 0
-        }
-    }
-    int Compute:createMatrix_w(int device, int width, int height, int type) {
-        if (type == Compute.FLOAT) {
-            int mat = lib.createMatrix(device, width, height, Compute.FLOAT, myDanaComp)
-            return mat
-        }
-        else if (type == Compute.UINT) {
-            int mat = lib.createMatrix(device, width, height, Compute.UINT, myDanaComp)
-            return mat
-        }
-        else {
-            return 0
-        }
-    }
-    void Compute:destroyMemoryArea_w(int memObj_cl) {
-        lib.destroyMemoryArea(memObj_cl)
-    }
-    int[] Compute:createProgram_w(char source[]) {
-        int x[] = lib.createProgram(source, myDanaComp)
-        return x
-    }
-    void Compute:writeIntArray_w(int queue_cl, int memObj_cl, int values[]) {
-        lib.writeIntArray(queue_cl, memObj_cl, values)
-    }
-    int[] Compute:readIntArray_w(int queue_cl, int memObj_cl, int buf[]) {
-        return lib.readIntArray(queue_cl, memObj_cl, buf)
-    }
-    void Compute:writeFloatArray_w(int queue_cl, int memObj_cl, dec values[]) {
-        lib.writeFloatArray(queue_cl, memObj_cl, values)
-    }
-    dec[] Compute:readFloatArray_w(int queue_cl, int memObj_cl, int len) {
-        return lib.readFloatArray(queue_cl, memObj_cl, len)
-    }
-    void Compute:writeIntMatrix_w(int queue_cl, int memObj_cl, int buf[][]) {
-        lib.writeIntMatrix(queue_cl, memObj_cl, buf)
-    }
-    int[][] Compute:readIntMatrix_w(int queue_cl, int memObj_cl, int buf[][]) {
-        return lib.readIntMatrix(queue_cl, memObj_cl, buf)
-    }
-    void Compute:writeFloatMatrix_w(int queue_cl, int memObj_cl, dec buf[][]) {
-        lib.writeFloatMatrix(queue_cl, memObj_cl, buf)
-    }
-    dec[][] Compute:readFloatMatrix_w(int queue_cl, int memObj_cl, dec buf[][]) {
-        return lib.readFloatMatrix(queue_cl, memObj_cl, buf)
-    }
-    int Compute:prepareKernel_w(int clProghandle, int paramHandles[], int paramCount, char program[]) {
-        return lib.prepareKernel(clProghandle, paramHandles, paramCount, program)
-    }
-    void Compute:runKernel_w(int clKernel, int queue_cl, int outputDims[]) {
-        lib.runKernel(clKernel, queue_cl, outputDims)
+
+    implementation MatrixDec {
+        int handle
+        Compute dev
+        int w
+        int h
+
+        MatrixDec:MatrixDec(store Compute device, int width, int height)
+            {
+            handle = lib.createMatrix(device.deviceID, width, height, FLOAT, device.handle)
+            dev = device
+            w = width
+            h = height
+            }
+
+        void MatrixDec:write(dec content[][])
+            {
+            lib.writeFloatMatrix(dev.queueHandle, handle, content)
+            }
+
+        dec[][] MatrixDec:read()
+            {
+            return lib.readFloatMatrix(dev.queueHandle, handle, null)
+            }
+        
+        int MatrixDec:getMemoryLoc()
+            {
+            return handle
+            }
+        
+        void Destructor:destroy()
+            {
+            lib.destroyMemoryArea(handle)
+            }
     }
 }
