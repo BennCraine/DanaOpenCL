@@ -140,6 +140,47 @@ CONTEXT_LI* getContextByDevice(DANA_COMP* danaComp, cl_device_id device) {
     return NULL;
 }
 
+typedef struct _log_list_item {
+    char* APIFunctionCall;
+    int errorCode;
+    struct _log_list_item* next;
+}LOG_LI;
+
+LOG_LI* logListHead = NULL;
+LOG_LI* logListEnd = NULL;
+
+LOG_LI* newLogItem(char* func, int err) {
+    LOG_LI* newLog = (LOG_LI*) malloc(sizeof(LOG_LI));
+    newLog->APIFunctionCall = func;
+    newLog->errorCode = err;
+    newLog->next = NULL;
+    return newLog;
+}
+
+void addLog(LOG_LI* adding) {
+    if (logListHead == NULL) {
+        logListHead = adding;
+        logListEnd = adding;
+        return;
+    }
+
+    logListEnd->next = adding; 
+    logListEnd = adding;
+    return;
+}
+
+INSTRUCTION_DEF printLogs(VFrame* cframe) {
+    LOG_LI* probe = logListHead;
+    if (probe == NULL) {
+        return RETURN_OK;
+    }
+    for (probe; probe->next != NULL; probe = probe->next) {
+        printf("%s | %d\n", probe->APIFunctionCall, probe->errorCode);
+    }
+    printf("%s | %d\n", probe->APIFunctionCall, probe->errorCode);
+    return RETURN_OK;
+}
+
 INSTRUCTION_DEF createContextSpace(VFrame* cframe) {
     DANA_COMP* dana_component_id = (DANA_COMP*) malloc(sizeof(DANA_COMP));
     dana_component_id->contexts = NULL;
@@ -173,7 +214,9 @@ INSTRUCTION_DEF init(VFrame* cframe) {
     
     CL_err = clGetPlatformIDs( MAX_PLATFORMS, globalClPlatforms, &numofPlatforms );
     if (CL_err != CL_SUCCESS) {
-        printf("platform id broke in init\n");
+        printf("no opencl implimentation found\n");
+        api->returnInt(cframe, (size_t) 1);
+        return RETURN_OK;
     }
 
     devices = (cl_device_id**) malloc(sizeof(cl_device_id*)*numofPlatforms);
@@ -191,6 +234,8 @@ INSTRUCTION_DEF init(VFrame* cframe) {
 
     alreadyInitFlag = 1;
 
+    api->returnInt(cframe, (size_t) 0);
+
     return RETURN_OK;
 }
 
@@ -204,7 +249,6 @@ INSTRUCTION_DEF getComputeDeviceIDs(VFrame* cframe) {
     cl_int CL_err = CL_SUCCESS;
 
     if (devices == NULL) {
-        printf("no devices found");
         //return empty array
         DanaEl* newArray = api->makeArray(stringArrayGT, 0, NULL);
         api->returnEl(cframe, newArray);
@@ -250,10 +294,8 @@ INSTRUCTION_DEF getComputeDeviceIDs(VFrame* cframe) {
  * dana component instance has access to through a context.
  */
 INSTRUCTION_DEF getComputeDevices(VFrame* cframe) {
-    printf("4\n");
     cl_int CL_err = CL_SUCCESS;
     if (devices == NULL) {
-        printf("no devices found");
         //return empty array
         DanaEl* newArray = api->makeArray(stringArrayGT, 0, NULL);
         api->returnEl(cframe, newArray);
@@ -315,6 +357,7 @@ INSTRUCTION_DEF getComputeDevices(VFrame* cframe) {
  * Then when a dana component instance makes requests like read/writes to a device
  * we search for the context that device is tied to under their corrisponding
  * DANA_COMP state
+ * Return 0 on success, >0 otherwise
  */
 INSTRUCTION_DEF createContext(FrameData* cframe) {
     cl_int CL_Err = CL_SUCCESS;
@@ -367,14 +410,15 @@ INSTRUCTION_DEF createContext(FrameData* cframe) {
             const cl_context_properties props[] = {CL_CONTEXT_PLATFORM, newContextItem->platform, 0};
             newContextItem->context = clCreateContext(props, newContextItem->numOfDevices, newContextItem->devices, NULL, NULL, &CL_Err);
             if (CL_Err != CL_SUCCESS) {
-                printf("cl not likey\n");
-                printf("code: %d\n", CL_Err);
+                addLog(newLogItem("clCreateContext", CL_Err));
+                api->returnInt(cframe, (size_t) 1);
+                return RETURN_OK;
             }
 
             addNewContext(danaComp, newContextItem);
         }
     }
-
+    api->returnInt(cframe, (size_t) 0);
     return RETURN_OK;
 }
 
@@ -390,7 +434,9 @@ INSTRUCTION_DEF createAsynchQueue(FrameData* cframe) {
     const cl_queue_properties props[] = {CL_QUEUE_PROPERTIES, 0};
     cl_command_queue newQ = clCreateCommandQueueWithProperties(context, device, NULL, &CL_err);
     if(CL_err != CL_SUCCESS) {
-        printf("err in asynch creation: %d\n", CL_err);
+        addLog(newLogItem("clCreateCommandQueueWithProperties", CL_err));
+        api->returnInt(cframe, (size_t) 0);
+        return RETURN_OK;
     }
 
     api->returnInt(cframe, (size_t) newQ);
@@ -410,7 +456,9 @@ INSTRUCTION_DEF createSynchQueue(FrameData* cframe) {
     const cl_queue_properties props[] = {CL_QUEUE_PROPERTIES, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, 0};
     cl_command_queue newQ = clCreateCommandQueueWithProperties(context, device, props, &CL_err);
     if(CL_err != CL_SUCCESS) {
-        printf("err in asynch creation: %d\n", CL_err);
+        addLog(newLogItem("clCreateCommandQueueWithProperties", CL_err));
+        api->returnInt(cframe, (size_t) 0);
+        return RETURN_OK;
     }
 
     api->returnInt(cframe, (size_t) newQ);
@@ -447,7 +495,9 @@ INSTRUCTION_DEF createArray(FrameData* cframe) {
     cl_mem newArray = clCreateBuffer(context, CL_MEM_READ_WRITE, size, NULL, &CL_err);
 
     if (CL_err != CL_SUCCESS) {
-        printf("issue in array creation\n");
+        addLog(newLogItem("clCreateBuffer", CL_err));
+        api->returnInt(cframe, (size_t) 0);
+        return RETURN_OK;
     }
 
     api->returnInt(cframe, (size_t) newArray);
@@ -473,8 +523,11 @@ INSTRUCTION_DEF writeIntArray(FrameData* cframe) {
 
     cl_int CL_err = clEnqueueWriteBuffer(queue, memObj, CL_TRUE, 0, hostArrayLen*sizeof(size_t), rawHostArray, NULL, NULL, NULL);
     if (CL_err != CL_SUCCESS) {
-        printf("error in int write buffer\n");
+        addLog(newLogItem("clEnqueueWriteBuffer", CL_err));
+        api->returnInt(cframe, (size_t) 1);
+        return RETURN_OK;
     }
+    api->returnInt(cframe, (size_t) 0);
     return RETURN_OK;    
 }
 
@@ -490,7 +543,9 @@ INSTRUCTION_DEF readIntArray(FrameData* cframe) {
 
     cl_int CL_err = clEnqueueReadBuffer(queue, memObj, CL_TRUE, 0, hostArrayLen*sizeof(size_t), rawHostArray, NULL, NULL, NULL);
     if (CL_err != CL_SUCCESS) {
-        printf("error in read buffer");
+        addLog(newLogItem("clEnqueueReadBuffer", CL_err));
+        api->returnEl(cframe, NULL);
+        return RETURN_OK;
     }
 
     DanaEl* hostArray = api->makeArray(intArrayGT, hostArrayLen, NULL);
@@ -522,8 +577,11 @@ INSTRUCTION_DEF writeFloatArray(FrameData* cframe) {
 
     cl_int CL_err = clEnqueueWriteBuffer(queue, memObj, CL_TRUE, 0, hostArrayLen*sizeof(float), rawHostArray, NULL, NULL, NULL);
     if (CL_err != CL_SUCCESS) {
-        printf("error in write float buffer\n");
+        addLog(newLogItem("clEnqueueWriteBuffer", CL_err));
+        api->returnInt(cframe, (size_t) 1);
+        return RETURN_OK;
     }
+    api->returnInt(cframe, (size_t) 0);
     return RETURN_OK;    
 }
 
@@ -539,7 +597,9 @@ INSTRUCTION_DEF readFloatArray(FrameData* cframe) {
 
     cl_int CL_err = clEnqueueReadBuffer(queue, memObj, CL_TRUE, 0, hostArrayLen*sizeof(float), fromDevice, NULL, NULL, NULL);
     if (CL_err != CL_SUCCESS) {
-        printf("error in read float buffer");
+        addLog(newLogItem("clEnqueueReadBuffer", CL_err));
+        api->returnEl(cframe, NULL);
+        return RETURN_OK;
     }
 
 
@@ -588,7 +648,9 @@ INSTRUCTION_DEF createMatrix(FrameData* cframe) {
     cl_mem newMatrix = clCreateImage(context, CL_MEM_READ_WRITE, &form, &desc, NULL, &CL_err);
 
     if (CL_err != CL_SUCCESS) {
-        printf("issue in matrix creation: %d\n", CL_err);
+        addLog(newLogItem("clCreateImage", CL_err));
+        api->returnInt(cframe, (size_t) 0);
+        return RETURN_OK;
     }
 
     api->returnInt(cframe, (size_t) newMatrix);
@@ -620,10 +682,13 @@ INSTRUCTION_DEF writeIntMatrix(FrameData* cframe) {
     cl_int CL_err = clEnqueueWriteImage(queue, memObj, CL_TRUE, origin, region, 0, 0, rawHostMatrix, 0, NULL, NULL);
 
     if (CL_err != CL_SUCCESS) {
-        printf("error in write buffer: %d\n", CL_err);
+        addLog(newLogItem("clEnqueueWriteImage", CL_err));
+        api->returnInt(cframe, (size_t) 1);
+        return RETURN_OK;
     }
     else {
     }
+    api->returnInt(cframe, (size_t) 0);
     return RETURN_OK;    
 }
 
@@ -645,7 +710,9 @@ INSTRUCTION_DEF readIntMatrix(FrameData* cframe) {
 
     int CL_Err = clEnqueueReadImage(queue, memObj, CL_TRUE, origin, region, 0, 0, rawHostMatrix, 0, NULL, NULL);
     if (CL_Err != CL_SUCCESS) {
-        printf("error in read matrix: %d\n", CL_Err);
+        addLog(newLogItem("clEnqueueReadImage", CL_Err));
+        api->returnEl(cframe, NULL);
+        return RETURN_OK;
     }
 
     DanaEl* hostMatrix = api->makeArrayMD(intMatrixGT, 2, hostMatrixLens, NULL);
@@ -685,10 +752,11 @@ INSTRUCTION_DEF writeFloatMatrix(FrameData* cframe) {
     cl_int CL_err = clEnqueueWriteImage(queue, memObj, CL_TRUE, origin, region, 0, 0, rawHostMatrix, 0, NULL, NULL);
 
     if (CL_err != CL_SUCCESS) {
-        printf("error in write buffer: %d\n", CL_err);
+        addLog(newLogItem("clEnqueueWriteImage", CL_err));
+        api->returnInt(cframe, (size_t) 1);
+        return RETURN_OK;
     }
-    else {
-    }
+    api->returnInt(cframe, (size_t) 0);
     return RETURN_OK;    
 }
 
@@ -709,7 +777,9 @@ INSTRUCTION_DEF readFloatMatrix(FrameData* cframe) {
 
     int CL_Err = clEnqueueReadImage(queue, memObj, CL_TRUE, origin, region, 0, 0, rawHostMatrix, 0, NULL, NULL);
     if (CL_Err != CL_SUCCESS) {
-        printf("error in read matrix: %d\n", CL_Err);
+        addLog(newLogItem("clEnqueueReadImage", CL_Err));
+        api->returnEl(cframe, NULL);
+        return RETURN_OK;
     }
 
     DanaEl* hostMatrix = api->makeArrayMD(decMatrixGT, 2, hostMatrixLens, NULL);
@@ -734,7 +804,8 @@ INSTRUCTION_DEF destroyMemoryArea(FrameData* cframe) {
     //here just in case
     CL_err = clReleaseMemObject(memObj);
     if (CL_err != CL_SUCCESS) {
-        printf("error in freeing memory area");
+        addLog(newLogItem("clReleaseMemObject", CL_err));
+        return RETURN_OK;
     }
     return RETURN_OK;
 }
@@ -761,11 +832,15 @@ INSTRUCTION_DEF createProgram(FrameData* cframe) {
 
     prog = clCreateProgramWithSource(contextItem->context, 1, (const char**) programStrings, NULL, &CL_err);
     if (CL_err != CL_SUCCESS) {
+        addLog(newLogItem("clCreateProgramWithSource", CL_err));
+        api->returnInt(cframe, (size_t) 0);
+        return RETURN_OK;
     }
 
     CL_err = CL_SUCCESS;
     CL_err = clBuildProgram(prog, contextItem->numOfDevices, contextItem->devices, NULL, NULL, NULL);
     if (CL_err != CL_SUCCESS) {
+        addLog(newLogItem("clBuildProgram", CL_err));
         size_t len;
         char buf[2048];
         printf("CL_err = %d\n", CL_err);
@@ -810,8 +885,8 @@ INSTRUCTION_DEF prepareKernel(FrameData* cframe) {
     cl_kernel kernel = clCreateKernel(program, progName, &CL_err);
 
     if (CL_err != CL_SUCCESS) {
+        addLog(newLogItem("clCreateKernel", CL_err));
         api->returnInt(cframe, (size_t) 0);
-        printf("issue with kernel creation: %d\n", CL_err);
         return RETURN_OK;
     }
 
@@ -825,7 +900,7 @@ INSTRUCTION_DEF prepareKernel(FrameData* cframe) {
     for (int i = 0; i < paramCount; i++) {
         CL_err = clSetKernelArg(kernel, i, sizeof(size_t), rawParamArrayCpy);
         if (CL_err != CL_SUCCESS) {
-            printf("issue with kernel args: %d\n", CL_err);
+            addLog(newLogItem("clSetKernelArg", CL_err));
             api->returnInt(cframe, (size_t) 0);
             return RETURN_OK;
         }
@@ -864,7 +939,9 @@ INSTRUCTION_DEF runKernel(FrameData* cframe) {
     cl_int CL_err = CL_SUCCESS;
     CL_err = clEnqueueNDRangeKernel(queue, kernel, rawArrLen, NULL, globalWorkers, NULL, 0, NULL, kernel_event);
     if (CL_err != CL_SUCCESS) {
-        printf("error execing kernel: %d\n", CL_err);
+        addLog(newLogItem("clEnqueueNDRangeKernel", CL_err));
+        api->returnInt(cframe, (size_t) 1);
+        return RETURN_OK;
     }
 
     //wait for kernel to execute before continuing
@@ -874,7 +951,7 @@ INSTRUCTION_DEF runKernel(FrameData* cframe) {
     clReleaseEvent(*kernel_event);
     free(globalWorkers);
 
-
+    api->returnInt(cframe, (size_t) 0);
     return RETURN_OK;
 }
 
@@ -919,6 +996,7 @@ Interface* load(CoreAPI* capi) {
     setInterfaceFunction("prepareKernel", prepareKernel);
     setInterfaceFunction("runKernel", runKernel);
     setInterfaceFunction("createContextSpace", createContextSpace);
+    setInterfaceFunction("printLogs", printLogs);
 
     charArrayGT = api->resolveGlobalTypeMapping(getTypeDefinition("char[]"));
     stringArrayGT = api->resolveGlobalTypeMapping(getTypeDefinition("String[]"));

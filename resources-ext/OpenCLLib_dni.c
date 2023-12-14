@@ -41,10 +41,10 @@ static const DanaTypeField Object_spec_fields[] = {
 {(DanaType*) &Object_spec[2], ".state", 6},
 };
 static const DanaType Object_def = {TYPE_OBJECT, 0, 0, (DanaTypeField*) Object_spec_fields, 3};
-static const DanaType void_def = 
-{TYPE_LITERAL, 0, 0, NULL, 0};
 static const DanaType int_def = 
 {TYPE_LITERAL, 0, sizeof(size_t), NULL, 0};
+static const DanaType void_def = 
+{TYPE_LITERAL, 0, 0, NULL, 0};
 static const DanaTypeField int_array_fields[] = {
 {(DanaType*) &int_def, NULL, 0, 0, 0}};
 static const DanaType int_array_def = 
@@ -80,7 +80,7 @@ static const DanaTypeField function_OpenCLLib_toString_fields[] = {
 static const DanaTypeField function_OpenCLLib_getID_fields[] = {
 {(DanaType*) &char_array_def, NULL, 0, 0, 0}};
 static const DanaTypeField function_OpenCLLib_init_fields[] = {
-{(DanaType*) &void_def, NULL, 0, 0, 0}};
+{(DanaType*) &int_def, NULL, 0, 0, 0}};
 static const DanaTypeField function_OpenCLLib_createContextSpace_fields[] = {
 {(DanaType*) &int_def, NULL, 0, 0, 0}};
 static const DanaTypeField function_OpenCLLib_findPlatforms_fields[] = {
@@ -90,8 +90,8 @@ static const DanaTypeField function_OpenCLLib_getComputeDeviceIDs_fields[] = {
 static const DanaTypeField function_OpenCLLib_getComputeDevices_fields[] = {
 {(DanaType*) &String_array_def, NULL, 0, 0, 0}};
 static const DanaTypeField function_OpenCLLib_createContext_fields[] = {
-{(DanaType*) &void_def, NULL, 0, 0, 0},{(DanaType*) &int_array_def, NULL, 0, 0, 0},
-{(DanaType*) &int_def, NULL, 0, 0, 16}};
+{(DanaType*) &int_def, NULL, 0, 0, 0},{(DanaType*) &int_array_def, NULL, 0, 0, 8},
+{(DanaType*) &int_def, NULL, 0, 0, 24}};
 static const DanaTypeField function_OpenCLLib_createAsynchQueue_fields[] = {
 {(DanaType*) &int_def, NULL, 0, 0, 0},{(DanaType*) &int_def, NULL, 0, 0, 8},
 {(DanaType*) &int_def, NULL, 0, 0, 16}};
@@ -116,33 +116,33 @@ static const DanaTypeField function_OpenCLLib_createProgram_fields[] = {
 {(DanaType*) &int_def, NULL, 0, 0, 24},
 {(DanaType*) &int_def, NULL, 0, 0, 32}};
 static const DanaTypeField function_OpenCLLib_writeIntArray_fields[] = {
-{(DanaType*) &void_def, NULL, 0, 0, 0},{(DanaType*) &int_def, NULL, 0, 0, 0},
-{(DanaType*) &int_def, NULL, 0, 0, 8},
-{(DanaType*) &int_array_def, NULL, 0, 0, 16}};
+{(DanaType*) &int_def, NULL, 0, 0, 0},{(DanaType*) &int_def, NULL, 0, 0, 8},
+{(DanaType*) &int_def, NULL, 0, 0, 16},
+{(DanaType*) &int_array_def, NULL, 0, 0, 24}};
 static const DanaTypeField function_OpenCLLib_readIntArray_fields[] = {
 {(DanaType*) &int_array_def, NULL, 0, 0, 0},{(DanaType*) &int_def, NULL, 0, 0, 16},
 {(DanaType*) &int_def, NULL, 0, 0, 24},
 {(DanaType*) &int_def, NULL, 0, 0, 32}};
 static const DanaTypeField function_OpenCLLib_writeFloatArray_fields[] = {
-{(DanaType*) &void_def, NULL, 0, 0, 0},{(DanaType*) &int_def, NULL, 0, 0, 0},
-{(DanaType*) &int_def, NULL, 0, 0, 8},
-{(DanaType*) &dec_array_def, NULL, 0, 0, 16}};
+{(DanaType*) &int_def, NULL, 0, 0, 0},{(DanaType*) &int_def, NULL, 0, 0, 8},
+{(DanaType*) &int_def, NULL, 0, 0, 16},
+{(DanaType*) &dec_array_def, NULL, 0, 0, 24}};
 static const DanaTypeField function_OpenCLLib_readFloatArray_fields[] = {
 {(DanaType*) &dec_array_def, NULL, 0, 0, 0},{(DanaType*) &int_def, NULL, 0, 0, 16},
 {(DanaType*) &int_def, NULL, 0, 0, 24},
 {(DanaType*) &int_def, NULL, 0, 0, 32}};
 static const DanaTypeField function_OpenCLLib_writeIntMatrix_fields[] = {
-{(DanaType*) &void_def, NULL, 0, 0, 0},{(DanaType*) &int_def, NULL, 0, 0, 0},
-{(DanaType*) &int_def, NULL, 0, 0, 8},
-{(DanaType*) &int_a_array_def, NULL, 0, 0, 16}};
+{(DanaType*) &int_def, NULL, 0, 0, 0},{(DanaType*) &int_def, NULL, 0, 0, 8},
+{(DanaType*) &int_def, NULL, 0, 0, 16},
+{(DanaType*) &int_a_array_def, NULL, 0, 0, 24}};
 static const DanaTypeField function_OpenCLLib_readIntMatrix_fields[] = {
 {(DanaType*) &int_a_array_def, NULL, 0, 0, 0},{(DanaType*) &int_def, NULL, 0, 0, 16},
 {(DanaType*) &int_def, NULL, 0, 0, 24},
 {(DanaType*) &int_array_def, NULL, 0, 0, 32}};
 static const DanaTypeField function_OpenCLLib_writeFloatMatrix_fields[] = {
-{(DanaType*) &void_def, NULL, 0, 0, 0},{(DanaType*) &int_def, NULL, 0, 0, 0},
-{(DanaType*) &int_def, NULL, 0, 0, 8},
-{(DanaType*) &dec_a_array_def, NULL, 0, 0, 16}};
+{(DanaType*) &int_def, NULL, 0, 0, 0},{(DanaType*) &int_def, NULL, 0, 0, 8},
+{(DanaType*) &int_def, NULL, 0, 0, 16},
+{(DanaType*) &dec_a_array_def, NULL, 0, 0, 24}};
 static const DanaTypeField function_OpenCLLib_readFloatMatrix_fields[] = {
 {(DanaType*) &dec_a_array_def, NULL, 0, 0, 0},{(DanaType*) &int_def, NULL, 0, 0, 16},
 {(DanaType*) &int_def, NULL, 0, 0, 24},
@@ -153,36 +153,39 @@ static const DanaTypeField function_OpenCLLib_prepareKernel_fields[] = {
 {(DanaType*) &int_def, NULL, 0, 0, 32},
 {(DanaType*) &char_array_def, NULL, 0, 0, 40}};
 static const DanaTypeField function_OpenCLLib_runKernel_fields[] = {
-{(DanaType*) &void_def, NULL, 0, 0, 0},{(DanaType*) &int_def, NULL, 0, 0, 0},
-{(DanaType*) &int_def, NULL, 0, 0, 8},
-{(DanaType*) &int_array_def, NULL, 0, 0, 16}};
+{(DanaType*) &int_def, NULL, 0, 0, 0},{(DanaType*) &int_def, NULL, 0, 0, 8},
+{(DanaType*) &int_def, NULL, 0, 0, 16},
+{(DanaType*) &int_array_def, NULL, 0, 0, 24}};
+static const DanaTypeField function_OpenCLLib_printLogs_fields[] = {
+{(DanaType*) &void_def, NULL, 0, 0, 0}};
 static const DanaType object_OpenCLLib_functions_spec[] = {
 {TYPE_FUNCTION, 0, 24, (DanaTypeField*) &function_OpenCLLib_clone_fields, 2},
 {TYPE_FUNCTION, 0, 24, (DanaTypeField*) &function_OpenCLLib_equals_fields, 2},
 {TYPE_FUNCTION, 0, 16, (DanaTypeField*) &function_OpenCLLib_toString_fields, 1},
 {TYPE_FUNCTION, 0, 16, (DanaTypeField*) &function_OpenCLLib_getID_fields, 1},
-{TYPE_FUNCTION, 0, 0, (DanaTypeField*) &function_OpenCLLib_init_fields, 1},
+{TYPE_FUNCTION, 0, 8, (DanaTypeField*) &function_OpenCLLib_init_fields, 1},
 {TYPE_FUNCTION, 0, 8, (DanaTypeField*) &function_OpenCLLib_createContextSpace_fields, 1},
 {TYPE_FUNCTION, 0, 0, (DanaTypeField*) &function_OpenCLLib_findPlatforms_fields, 1},
 {TYPE_FUNCTION, 0, 16, (DanaTypeField*) &function_OpenCLLib_getComputeDeviceIDs_fields, 1},
 {TYPE_FUNCTION, 0, 16, (DanaTypeField*) &function_OpenCLLib_getComputeDevices_fields, 1},
-{TYPE_FUNCTION, 0, 24, (DanaTypeField*) &function_OpenCLLib_createContext_fields, 3},
+{TYPE_FUNCTION, 0, 32, (DanaTypeField*) &function_OpenCLLib_createContext_fields, 3},
 {TYPE_FUNCTION, 0, 24, (DanaTypeField*) &function_OpenCLLib_createAsynchQueue_fields, 3},
 {TYPE_FUNCTION, 0, 24, (DanaTypeField*) &function_OpenCLLib_createSynchQueue_fields, 3},
 {TYPE_FUNCTION, 0, 40, (DanaTypeField*) &function_OpenCLLib_createArray_fields, 5},
 {TYPE_FUNCTION, 0, 48, (DanaTypeField*) &function_OpenCLLib_createMatrix_fields, 6},
 {TYPE_FUNCTION, 0, 8, (DanaTypeField*) &function_OpenCLLib_destroyMemoryArea_fields, 2},
 {TYPE_FUNCTION, 0, 40, (DanaTypeField*) &function_OpenCLLib_createProgram_fields, 4},
-{TYPE_FUNCTION, 0, 32, (DanaTypeField*) &function_OpenCLLib_writeIntArray_fields, 4},
+{TYPE_FUNCTION, 0, 40, (DanaTypeField*) &function_OpenCLLib_writeIntArray_fields, 4},
 {TYPE_FUNCTION, 0, 40, (DanaTypeField*) &function_OpenCLLib_readIntArray_fields, 4},
-{TYPE_FUNCTION, 0, 32, (DanaTypeField*) &function_OpenCLLib_writeFloatArray_fields, 4},
+{TYPE_FUNCTION, 0, 40, (DanaTypeField*) &function_OpenCLLib_writeFloatArray_fields, 4},
 {TYPE_FUNCTION, 0, 40, (DanaTypeField*) &function_OpenCLLib_readFloatArray_fields, 4},
-{TYPE_FUNCTION, 0, 32, (DanaTypeField*) &function_OpenCLLib_writeIntMatrix_fields, 4},
+{TYPE_FUNCTION, 0, 40, (DanaTypeField*) &function_OpenCLLib_writeIntMatrix_fields, 4},
 {TYPE_FUNCTION, 0, 48, (DanaTypeField*) &function_OpenCLLib_readIntMatrix_fields, 4},
-{TYPE_FUNCTION, 0, 32, (DanaTypeField*) &function_OpenCLLib_writeFloatMatrix_fields, 4},
+{TYPE_FUNCTION, 0, 40, (DanaTypeField*) &function_OpenCLLib_writeFloatMatrix_fields, 4},
 {TYPE_FUNCTION, 0, 48, (DanaTypeField*) &function_OpenCLLib_readFloatMatrix_fields, 4},
 {TYPE_FUNCTION, 0, 56, (DanaTypeField*) &function_OpenCLLib_prepareKernel_fields, 5},
-{TYPE_FUNCTION, 0, 32, (DanaTypeField*) &function_OpenCLLib_runKernel_fields, 4}};
+{TYPE_FUNCTION, 0, 40, (DanaTypeField*) &function_OpenCLLib_runKernel_fields, 4},
+{TYPE_FUNCTION, 0, 0, (DanaTypeField*) &function_OpenCLLib_printLogs_fields, 1}};
 static const DanaTypeField intf_functions_def[] = {
 {(DanaType*) &object_OpenCLLib_functions_spec[0], "clone", 5},
 {(DanaType*) &object_OpenCLLib_functions_spec[1], "equals", 6},
@@ -209,11 +212,12 @@ static const DanaTypeField intf_functions_def[] = {
 {(DanaType*) &object_OpenCLLib_functions_spec[22], "writeFloatMatrix", 16},
 {(DanaType*) &object_OpenCLLib_functions_spec[23], "readFloatMatrix", 15},
 {(DanaType*) &object_OpenCLLib_functions_spec[24], "prepareKernel", 13},
-{(DanaType*) &object_OpenCLLib_functions_spec[25], "runKernel", 9}};
+{(DanaType*) &object_OpenCLLib_functions_spec[25], "runKernel", 9},
+{(DanaType*) &object_OpenCLLib_functions_spec[26], "printLogs", 9}};
 static const DanaTypeField intf_events_def[] = {
 };
 static const DanaType OpenCLLib_object_spec[] = {
-{TYPE_DATA, 0, 0, (DanaTypeField*) intf_functions_def, 26},
+{TYPE_DATA, 0, 0, (DanaTypeField*) intf_functions_def, 27},
 {TYPE_DATA, 0, 0, (DanaTypeField*) intf_events_def, 0},
 {TYPE_DATA, 0, 0, NULL, 0}
 };
@@ -248,6 +252,7 @@ static unsigned char op_writeFloatMatrix_thread_spec[sizeof(VFrameHeader)+sizeof
 static unsigned char op_readFloatMatrix_thread_spec[sizeof(VFrameHeader)+sizeof(VFrame)];
 static unsigned char op_prepareKernel_thread_spec[sizeof(VFrameHeader)+sizeof(VFrame)];
 static unsigned char op_runKernel_thread_spec[sizeof(VFrameHeader)+sizeof(VFrame)];
+static unsigned char op_printLogs_thread_spec[sizeof(VFrameHeader)+sizeof(VFrame)];
 static SourceHeader header;
 static DanaComponent self;
 static size_t interfaceFunctions[] = {
@@ -276,7 +281,8 @@ static size_t interfaceFunctions[] = {
 (size_t) op_writeFloatMatrix_thread_spec,
 (size_t) op_readFloatMatrix_thread_spec,
 (size_t) op_prepareKernel_thread_spec,
-(size_t) op_runKernel_thread_spec};
+(size_t) op_runKernel_thread_spec,
+(size_t) op_printLogs_thread_spec};
 static DanaType libType = {TYPE_OBJECT, 0, 0, (DanaTypeField*) intf_def, 3};
 static InterfaceDetails ids[] = {{"OpenCLLib", 9, &libType}};
 static Interface objectInterfaces[] = {{&ids[0], {&self, NULL, NULL, interfaceFunctions, NULL, NULL}}		};
@@ -302,7 +308,7 @@ Interface* getPublicInterface(){
 ((VFrameHeader*) op_getID_thread_spec) -> sub = NULL;
 ((VFrameHeader*) op_getID_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[3];
 ((VFrameHeader*) op_getID_thread_spec) -> functionName = "getID";
-((VFrameHeader*) op_init_thread_spec) -> frameSize = sizeof(VFrame) + sizeof(VVarR) + 0;
+((VFrameHeader*) op_init_thread_spec) -> frameSize = sizeof(VFrame) + sizeof(VVarR) + 8;
 ((VFrameHeader*) op_init_thread_spec) -> formalParamsCount = 0;
 ((VFrameHeader*) op_init_thread_spec) -> sub = NULL;
 ((VFrameHeader*) op_init_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[4];
@@ -327,7 +333,7 @@ Interface* getPublicInterface(){
 ((VFrameHeader*) op_getComputeDevices_thread_spec) -> sub = NULL;
 ((VFrameHeader*) op_getComputeDevices_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[8];
 ((VFrameHeader*) op_getComputeDevices_thread_spec) -> functionName = "getComputeDevices";
-((VFrameHeader*) op_createContext_thread_spec) -> frameSize = sizeof(VFrame) + sizeof(VVarR) + 24;
+((VFrameHeader*) op_createContext_thread_spec) -> frameSize = sizeof(VFrame) + sizeof(VVarR) + 32;
 ((VFrameHeader*) op_createContext_thread_spec) -> formalParamsCount = 2;
 ((VFrameHeader*) op_createContext_thread_spec) -> sub = NULL;
 ((VFrameHeader*) op_createContext_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[9];
@@ -362,7 +368,7 @@ Interface* getPublicInterface(){
 ((VFrameHeader*) op_createProgram_thread_spec) -> sub = NULL;
 ((VFrameHeader*) op_createProgram_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[15];
 ((VFrameHeader*) op_createProgram_thread_spec) -> functionName = "createProgram";
-((VFrameHeader*) op_writeIntArray_thread_spec) -> frameSize = sizeof(VFrame) + sizeof(VVarR) + 32;
+((VFrameHeader*) op_writeIntArray_thread_spec) -> frameSize = sizeof(VFrame) + sizeof(VVarR) + 40;
 ((VFrameHeader*) op_writeIntArray_thread_spec) -> formalParamsCount = 3;
 ((VFrameHeader*) op_writeIntArray_thread_spec) -> sub = NULL;
 ((VFrameHeader*) op_writeIntArray_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[16];
@@ -372,7 +378,7 @@ Interface* getPublicInterface(){
 ((VFrameHeader*) op_readIntArray_thread_spec) -> sub = NULL;
 ((VFrameHeader*) op_readIntArray_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[17];
 ((VFrameHeader*) op_readIntArray_thread_spec) -> functionName = "readIntArray";
-((VFrameHeader*) op_writeFloatArray_thread_spec) -> frameSize = sizeof(VFrame) + sizeof(VVarR) + 32;
+((VFrameHeader*) op_writeFloatArray_thread_spec) -> frameSize = sizeof(VFrame) + sizeof(VVarR) + 40;
 ((VFrameHeader*) op_writeFloatArray_thread_spec) -> formalParamsCount = 3;
 ((VFrameHeader*) op_writeFloatArray_thread_spec) -> sub = NULL;
 ((VFrameHeader*) op_writeFloatArray_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[18];
@@ -382,7 +388,7 @@ Interface* getPublicInterface(){
 ((VFrameHeader*) op_readFloatArray_thread_spec) -> sub = NULL;
 ((VFrameHeader*) op_readFloatArray_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[19];
 ((VFrameHeader*) op_readFloatArray_thread_spec) -> functionName = "readFloatArray";
-((VFrameHeader*) op_writeIntMatrix_thread_spec) -> frameSize = sizeof(VFrame) + sizeof(VVarR) + 32;
+((VFrameHeader*) op_writeIntMatrix_thread_spec) -> frameSize = sizeof(VFrame) + sizeof(VVarR) + 40;
 ((VFrameHeader*) op_writeIntMatrix_thread_spec) -> formalParamsCount = 3;
 ((VFrameHeader*) op_writeIntMatrix_thread_spec) -> sub = NULL;
 ((VFrameHeader*) op_writeIntMatrix_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[20];
@@ -392,7 +398,7 @@ Interface* getPublicInterface(){
 ((VFrameHeader*) op_readIntMatrix_thread_spec) -> sub = NULL;
 ((VFrameHeader*) op_readIntMatrix_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[21];
 ((VFrameHeader*) op_readIntMatrix_thread_spec) -> functionName = "readIntMatrix";
-((VFrameHeader*) op_writeFloatMatrix_thread_spec) -> frameSize = sizeof(VFrame) + sizeof(VVarR) + 32;
+((VFrameHeader*) op_writeFloatMatrix_thread_spec) -> frameSize = sizeof(VFrame) + sizeof(VVarR) + 40;
 ((VFrameHeader*) op_writeFloatMatrix_thread_spec) -> formalParamsCount = 3;
 ((VFrameHeader*) op_writeFloatMatrix_thread_spec) -> sub = NULL;
 ((VFrameHeader*) op_writeFloatMatrix_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[22];
@@ -407,11 +413,16 @@ Interface* getPublicInterface(){
 ((VFrameHeader*) op_prepareKernel_thread_spec) -> sub = NULL;
 ((VFrameHeader*) op_prepareKernel_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[24];
 ((VFrameHeader*) op_prepareKernel_thread_spec) -> functionName = "prepareKernel";
-((VFrameHeader*) op_runKernel_thread_spec) -> frameSize = sizeof(VFrame) + sizeof(VVarR) + 32;
+((VFrameHeader*) op_runKernel_thread_spec) -> frameSize = sizeof(VFrame) + sizeof(VVarR) + 40;
 ((VFrameHeader*) op_runKernel_thread_spec) -> formalParamsCount = 3;
 ((VFrameHeader*) op_runKernel_thread_spec) -> sub = NULL;
 ((VFrameHeader*) op_runKernel_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[25];
 ((VFrameHeader*) op_runKernel_thread_spec) -> functionName = "runKernel";
+((VFrameHeader*) op_printLogs_thread_spec) -> frameSize = sizeof(VFrame) + sizeof(VVarR) + 0;
+((VFrameHeader*) op_printLogs_thread_spec) -> formalParamsCount = 0;
+((VFrameHeader*) op_printLogs_thread_spec) -> sub = NULL;
+((VFrameHeader*) op_printLogs_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[26];
+((VFrameHeader*) op_printLogs_thread_spec) -> functionName = "printLogs";
 memset(&self, '\0', sizeof(self));
 self.objects = objects; self.header = &header; self.header -> objectsCount = sizeof(objects) / sizeof(ObjectSpec);
 objectInterfaces[0].lbp.spec = &objects[0];
@@ -449,7 +460,8 @@ static Fable interfaceMappings[] = {
 {"writeFloatMatrix", (VFrameHeader*) op_writeFloatMatrix_thread_spec},
 {"readFloatMatrix", (VFrameHeader*) op_readFloatMatrix_thread_spec},
 {"prepareKernel", (VFrameHeader*) op_prepareKernel_thread_spec},
-{"runKernel", (VFrameHeader*) op_runKernel_thread_spec}};
+{"runKernel", (VFrameHeader*) op_runKernel_thread_spec},
+{"printLogs", (VFrameHeader*) op_printLogs_thread_spec}};
 void setInterfaceFunction(char *name, void *ptr){
 int i = 0;
 for (i = 0; i < sizeof(interfaceMappings) / sizeof(Fable); i ++){

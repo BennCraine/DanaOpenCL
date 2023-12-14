@@ -1,28 +1,29 @@
 uses data.String
 
 interface OpenCLLib {
-    void init()
+    int init()
     int createContextSpace()
 	void findPlatforms()
     int[] getComputeDeviceIDs()
     String[] getComputeDevices()
-    void createContext(int devices[], int danaComp)
+    int createContext(int devices[], int danaComp)
     int createAsynchQueue(int device, int danaComp)
     int createSynchQueue(int device, int danaComp)
     int createArray(int device, int length, int type, int danaComp)
     int createMatrix(int device, int width, int height, int type, int danaComp)
     void destroyMemoryArea(int memObj_cl)
     int createProgram(char source[], int danaComp, int device)
-    void writeIntArray(int queue_cl, int memObj_cl, int values[])
+    int writeIntArray(int queue_cl, int memObj_cl, int values[])
     int[] readIntArray(int queue_cl, int memObj_cl, int len)
-    void writeFloatArray(int queue_cl, int memObj_cl, dec values[])
+    int writeFloatArray(int queue_cl, int memObj_cl, dec values[])
     dec[] readFloatArray(int queue_cl, int memObj_cl, int len)
-    void writeIntMatrix(int queue_cl, int memObj_cl, int values[][])
+    int writeIntMatrix(int queue_cl, int memObj_cl, int values[][])
     int[][] readIntMatrix(int queue_cl, int memObj_cl, int lens[])
-    void writeFloatMatrix(int queue_cl, int memObj_cl, dec values[][])
+    int writeFloatMatrix(int queue_cl, int memObj_cl, dec values[][])
     dec[][] readFloatMatrix(int queue_cl, int memObj_cl, int lens[])
     int prepareKernel(int clProghandle, int paramHandles[], int paramCount, char program[])
-    void runKernel(int clKernel, int queue_cl, int outputDims[])
+    int runKernel(int clKernel, int queue_cl, int outputDims[])
+    void printLogs()
 }
 
 const int FLOAT = 0
@@ -30,12 +31,21 @@ const int UINT = 1
 
 component provides ComputeArray(Destructor), ComputeInfo, Compute(Destructor), Program(Destructor), ArrayInt(Destructor), ArrayDec(Destructor), MatrixInt(Destructor), MatrixDec(Destructor) requires native OpenCLLib lib, io.Output out {
 
+    void printLogs(Output out, OpenCLLib lib) {
+        out.println("Error in native library, printing logs...")
+        lib.printLogs()
+    }
+
     implementation ComputeInfo {
 
         /* {"@description" : "Returns all the devices (by name) available to the system"} */
         String[] ComputeInfo:getDevices()
             {
-            lib.init()
+            int noOpenCLPlatforms = lib.init()
+            if (noOpenCLPlatforms == 1)
+                {
+                throw new Exception("No OpenCL implementations found. This is a requirment for using the gpu library in Dana. For instructions on installing an OpenCL implementation see: \n https://github.com/KhronosGroup/OpenCL-Guide/blob/main/chapters/getting_started_windows.md or https://github.com/KhronosGroup/OpenCL-Guide/blob/main/chapters/getting_started_linux.md")
+                }
             return lib.getComputeDevices()
             }
     }
@@ -51,11 +61,17 @@ component provides ComputeArray(Destructor), ComputeInfo, Compute(Destructor), P
             int systemDeviceIDs[] = lib.getComputeDeviceIDs()
             String systemDevices[] = lib.getComputeDevices()
 
+            if (systemDeviceIDs == null || systemDevices == null || systemDeviceIDs.arrayLength != systemDevices.arrayLength)
+                {
+                printLogs(out, lib)
+                throw new Exception("Logs printed, returning.")
+                }
+
             int deviceIDsForArray[] = new int[devicesForArray.arrayLength]
 
             for (int i = 0; i < deviceIDsForArray.arrayLength; i++)
                 {
-                for (int k = 0; k < devices.arrayLength; k++)
+                for (int k = 0; k < systemDeviceIDs.arrayLength; k++)
                     {
                     if (devices[i].string == systemDevices[k].string)
                         {
@@ -67,10 +83,17 @@ component provides ComputeArray(Destructor), ComputeInfo, Compute(Destructor), P
                         }
                     }
                 }
-            lib.createContext(deviceIDsForArray, handle)
+            int apiErr = lib.createContext(deviceIDsForArray, handle)
+            if (apiErr != 0) 
+                {
+                printLogs(out, lib)
+                throw new Exception("Logs printed, returning.")
+                }
         }
         
-        void Destructor:destroy(){}
+        void Destructor:destroy(){
+            //lib.destroyContextSpace(handle)
+        }
     }
     
     implementation Compute {
@@ -89,6 +112,12 @@ component provides ComputeArray(Destructor), ComputeInfo, Compute(Destructor), P
             int systemDeviceIDs[] = lib.getComputeDeviceIDs()
             String systemDevices[] = lib.getComputeDevices()
 
+            if (systemDeviceIDs == null || systemDevices == null || systemDeviceIDs.arrayLength != systemDevices.arrayLength)
+                {
+                printLogs(out, lib)
+                throw new Exception("Logs printed, returning.")
+                }
+
             for (int i = 0; i < systemDevices.arrayLength; i++)
                 {
                 if (systemDevices[i].string == device)
@@ -104,6 +133,7 @@ component provides ComputeArray(Destructor), ComputeInfo, Compute(Destructor), P
             queueHandle = lib.createSynchQueue(deviceHandle, ca.handle)
             if (queueHandle == 0) 
                 {
+                printLogs(out, lib)
                 throw new Exception("Queue Creation Failed")
                 }
             }
@@ -122,7 +152,17 @@ component provides ComputeArray(Destructor), ComputeInfo, Compute(Destructor), P
         void Compute:runProgram(Program p)
             {
             int khandle = lib.prepareKernel(p.phandle, p.paramHandles, p.paramHandles.arrayLength, p.functionName)
-            lib.runKernel(khandle, queueHandle, p.outputDims)
+            if (khandle == 0)
+                {
+                printLogs(out, lib)
+                throw new Exception("Kernel Creation Failed")
+                }
+            int kerExecSuccess = lib.runKernel(khandle, queueHandle, p.outputDims)
+            if (kerExecSuccess != 0)
+                {
+                printLogs(out, lib)
+                throw new Exception("Kernel Execution Failed")
+                }
             }
         
         void Destructor:destroy()
@@ -143,6 +183,11 @@ component provides ComputeArray(Destructor), ComputeInfo, Compute(Destructor), P
             {
             program = stripSource(source)
             phandle = lib.createProgram(program, device.ca.handle, device.deviceHandle)
+            if (phandle == 0)
+                {
+                printLogs(out, lib)
+                throw new Exception("Program Failed to build")
+                }
             functionName = fName
             }
 
@@ -200,14 +245,13 @@ component provides ComputeArray(Destructor), ComputeInfo, Compute(Destructor), P
 
         void Program:setParameters(ExtMemory parameters[])
             {
-            //TODO calc outputDims
             paramHandles = new int[parameters.arrayLength]
             for (int i = 0; i < paramHandles.arrayLength; i++)
                 {
                 paramHandles[i] = parameters[i].getMemoryLoc()
                 if (i == paramHandles.arrayLength-1)
                     {
-                    outputDims = parameters[i].getDimentionLengths()
+                    outputDims = parameters[i].getDimensionLengths()
                     }
                 }
             }
@@ -226,6 +270,11 @@ component provides ComputeArray(Destructor), ComputeInfo, Compute(Destructor), P
         ArrayInt:ArrayInt(store Compute device, int length)
             {
             handle = lib.createArray(device.deviceHandle, length, UINT, device.ca.handle)
+            if (handle == 0)
+                {
+                printLogs(out, lib)
+                throw new Exception("Integer Buffer Creation Failed")
+                }
             len = length
             dev = device
             }
@@ -236,12 +285,23 @@ component provides ComputeArray(Destructor), ComputeInfo, Compute(Destructor), P
                 {
                 throw new Exception("Writing over boundary")
                 }
-            lib.writeIntArray(dev.queueHandle, handle, content)
+            int writeSuccess = lib.writeIntArray(dev.queueHandle, handle, content)
+            if (writeSuccess != 0)
+                {
+                printLogs(out, lib)
+                throw new Exception("Buffer Write Failed")
+                }
             }
 
         int[] ArrayInt:read()
             {
-            return lib.readIntArray(dev.queueHandle, handle, len) //buf??
+            int read[] = lib.readIntArray(dev.queueHandle, handle, len) 
+            if (read == null)
+                {
+                printLogs(out, lib)
+                throw new Exception("Buffer Read Failed")
+                }
+            return read
             }
         
         int ArrayInt:getMemoryLoc()
@@ -249,7 +309,7 @@ component provides ComputeArray(Destructor), ComputeInfo, Compute(Destructor), P
             return handle
             }
 
-        int[] ArrayInt:getDimentionLengths()
+        int[] ArrayInt:getDimensionLengths()
             {
             int dimLen[] = new int[](len)
             return dimLen
@@ -269,6 +329,11 @@ component provides ComputeArray(Destructor), ComputeInfo, Compute(Destructor), P
         ArrayDec:ArrayDec(store Compute device, int length)
             {
             handle = lib.createArray(device.deviceHandle, length, FLOAT, device.ca.handle)
+            if (handle == 0)
+                {
+                printLogs(out, lib)
+                throw new Exception("Decimal Buffer Creation Failed")
+                }
             dev = device
             len = length
             }
@@ -279,12 +344,23 @@ component provides ComputeArray(Destructor), ComputeInfo, Compute(Destructor), P
                 {
                 throw new Exception("Writing over boundary")
                 }
-            lib.writeFloatArray(dev.queueHandle, handle, content)
+            int writeSuccess = lib.writeFloatArray(dev.queueHandle, handle, content)
+            if (writeSuccess != 0)
+                {
+                printLogs(out, lib)
+                throw new Exception("Buffer Write Failed")
+                }
             }
 
         dec[] ArrayDec:read()
             {
-            return lib.readFloatArray(dev.queueHandle, handle, len)
+            dec read[] = lib.readFloatArray(dev.queueHandle, handle, len)
+            if (read == null)
+                {
+                printLogs(out, lib)
+                throw new Exception("Buffer Read Failed")
+                }
+            return read
             }
         
         int ArrayDec:getMemoryLoc()
@@ -292,7 +368,7 @@ component provides ComputeArray(Destructor), ComputeInfo, Compute(Destructor), P
             return handle
             }
 
-        int[] ArrayDec:getDimentionLengths()
+        int[] ArrayDec:getDimensionLengths()
             {
             int dimLen[] = new int[](len)
             return dimLen
@@ -316,6 +392,11 @@ component provides ComputeArray(Destructor), ComputeInfo, Compute(Destructor), P
             rows = height
             cols = width
             handle = lib.createMatrix(device.deviceHandle, rows, cols, UINT, device.ca.handle)
+            if (handle == 0)
+                {
+                printLogs(out, lib)
+                throw new Exception("Integer Matrix Creation Failed")
+                }
             }
 
         void MatrixInt:write(int content[][])
@@ -324,12 +405,23 @@ component provides ComputeArray(Destructor), ComputeInfo, Compute(Destructor), P
                 {
                 throw new Exception("Writing Over Boundary")
                 }
-            lib.writeIntMatrix(dev.queueHandle, handle, content)
+            int writeSuccess = lib.writeIntMatrix(dev.queueHandle, handle, content)
+            if (writeSuccess != 0)
+                {
+                printLogs(out, lib)
+                throw new Exception("Matrix Write Failed")
+                }
             }
 
         int[][] MatrixInt:read()
             {
-            return lib.readIntMatrix(dev.queueHandle, handle, new int[](rows, cols))
+            int read[][] = lib.readIntMatrix(dev.queueHandle, handle, new int[](rows, cols))
+            if (read == null)
+                {
+                printLogs(out, lib)
+                throw new Exception("Matrix read Failed")
+                }
+            return read
             }
         
         int MatrixInt:getMemoryLoc()
@@ -337,7 +429,7 @@ component provides ComputeArray(Destructor), ComputeInfo, Compute(Destructor), P
             return handle
             }
 
-        int[] MatrixInt:getDimentionLengths()
+        int[] MatrixInt:getDimensionLengths()
             {
             int dimLen[] = new int[](rows, cols)
             return dimLen
@@ -361,6 +453,11 @@ component provides ComputeArray(Destructor), ComputeInfo, Compute(Destructor), P
             rows = height
             cols = width
             handle = lib.createMatrix(device.deviceHandle, rows, cols, FLOAT, device.ca.handle)
+            if (handle == 0)
+                {
+                printLogs(out, lib)
+                throw new Exception("Decimal Matrix creation Failed")
+                }
             }
 
         void MatrixDec:write(dec content[][])
@@ -369,12 +466,23 @@ component provides ComputeArray(Destructor), ComputeInfo, Compute(Destructor), P
                 {
                 throw new Exception("Writing Over Boundary")
                 }
-            lib.writeFloatMatrix(dev.queueHandle, handle, content)
+            int writeSuccess = lib.writeFloatMatrix(dev.queueHandle, handle, content)
+            if (writeSuccess != 0)
+                {
+                printLogs(out, lib)
+                throw new Exception("Matrix Write Failed")
+                }
             }
 
         dec[][] MatrixDec:read()
             {
-            return lib.readFloatMatrix(dev.queueHandle, handle, new int[](rows, cols))
+            dec read[][] = lib.readFloatMatrix(dev.queueHandle, handle, new int[](rows, cols))
+            if (read == null)
+                {
+                printLogs(out, lib)
+                throw new Exception("Matrix Read Failed")
+                }
+            return read
             }
         
         int MatrixDec:getMemoryLoc()
@@ -382,7 +490,7 @@ component provides ComputeArray(Destructor), ComputeInfo, Compute(Destructor), P
             return handle
             }
 
-        int[] MatrixDec:getDimentionLengths()
+        int[] MatrixDec:getDimensionLengths()
             {
             int dimLen[] = new int[](rows, cols)
             return dimLen

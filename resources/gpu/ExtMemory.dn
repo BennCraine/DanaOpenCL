@@ -2,6 +2,6 @@ interface ExtMemory {
 
     /* {"@description" : "This function is called by internally by the GPU Compute framework; it has no public utility." } */
     int getMemoryLoc()
-    int[] getDimentionLengths()
+    int[] getDimensionLengths()
     
 }
