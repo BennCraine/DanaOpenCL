@@ -1,329 +1,153 @@
-component provides LogicalComputeDevice requires gpu.Compute,
+data ExtMemoryStore {
+    ExtMemory em
+}
+data ProgramStore {
+    Program p
+}
+component provides gpu.LogicalComputeDevice requires gpu.Compute,
+                                                gpu.ComputeArray,
+                                                gpu.Program,
+                                                gpu.ComputeInfo,
                                                 gpu.ComputeDistributionManager,
-                                                gpu.ComputeStats,
-                                                data.adt.List,
+                                                gpu.ExtMemory,
+                                                gpu.ArrayInt,
+                                                gpu.ArrayDec,
+                                                gpu.MatrixInt,
+                                                gpu.MatrixDec,
                                                 data.adt.HashTable,
-                                                data.adt.Queue,
+                                                data.adt.List,
                                                 io.Output out,
                                                 io.TextFile,
-                                                data.IntUtil iu,
-                                                data.StringUtil su,
-                                                data.DecUtil du
                                                 {
-
-    ComputeDistributionManager distManager
-    Compute nat
-
-    HashTable readQueues
-    HashTable writeQueues
-
-    HashTable openMemoryAreas
-    
+    ComputeInfo hardwareInfo
+    ComputeArray deviceBinder
+    Compute boundDevice
     HashTable programs
-
-    const int NONE = 2
-    const int BOTH = 3
+    HashTable openExtMemory
 
     LogicalComputeDevice:LogicalComputeDevice() {
-        nat = new Compute()
-        ComputeStats cm = new ComputeStats(nat)
-        distManager = new ComputeDistributionManager(cm, nat)
-
-        readQueues = new HashTable()
-        writeQueues = new HashTable()
-
-        openMemoryAreas = new HashTable()
-
+        openExtMemory = new HashTable()
         programs = new HashTable()
-
-        //get all devices the distManager has made available to us and create
-        //one read and one write queue for each
-        HashTableItem rw[] = rclone distManager.getReadWriteQueues(new HashTable[2])
-        for (int i = 0; i < rw.arrayLength; i++) {
-            HashTableItem nextItem = rw[i]
-            //device handle
-            ChandleWrapper x = nextItem.value
-
-            //native library call to create queue
-            int queue_cl = nat.createSynchQueue_w(x.handle)
-            ComputeQueue readQueue = new ComputeQueue(queue_cl, new Queue(), new String(nextItem.key))
-            readQueues.put(nextItem.key, readQueue)
-            
-            queue_cl = nat.createSynchQueue_w(x.handle)
-            readQueue = new ComputeQueue(queue_cl, new Queue(), new String(nextItem.key))
-            writeQueues.put(nextItem.key, readQueue)
-        }
+        hardwareInfo = new ComputeInfo()
+        deviceBinder = new ComputeArray(new String(hardwareInfo.getDevices()[0].string))
+        boundDevice = new Compute(hardwareInfo.getDevices()[0].string, deviceBinder)
     }
 
-    char[] typeToString(int type) {
-        if (type == Compute.FLOAT) {
-            String s = new String("DECIMAL")
-            return s.string
-        }
-        else if (type == Compute.UINT) {
-            String s = new String("UNSIGNED INTEGER")
-            return s.string
-        }
-        else if (type == BOTH) {
-            String s = new String("BOTH UNSIGNED INTEGER AND DECIMAL")
-            return s.string
-        }
-        else {
-            String s = new String("UNKNOWN")
-            return s.string
-        }
+    Compute getDeviceToUse() {
+        return boundDevice
     }
 
-    void LogicalComputeDevice:createArray(char name[], int type, int length) {
+    void buildPrograms(char source[], char fname[]) {
+        //create program for device
+        Program p = new Program(boundDevice, fname, source)
+
+        //store
+        programs.put("$(fname)$(boundDevice.getDevice())", new ProgramStore(p))
+    }
+
+    void execProgram(char fname[], ExtMemory params[]) {
+        ProgramStore ps = programs.get("$(fname)$(boundDevice.getDevice())")
+        Program p = ps.p
+        p.setParameters(params)
+        boundDevice.runProgram(p)
+    }
+
+    void LogicalComputeDevice:createIntArray(char name[], int length) {
         //consult distManager for device to use
-        HashTableItem device = distManager.mallocWhichDevice()
-        ChandleWrapper deviceHandle = device.value
-        char deviceName[] = device.key
+        Compute device = getDeviceToUse()
 
-        //native libraray call to create array on device from distManager
-        int clMemObj = nat.createArray_w(deviceHandle.handle, length, type)
-        ChandleWrapper arrayHandle = new ChandleWrapper(clMemObj)
-        int lengths[] = new int[1]
-        lengths[0] = length
+        //create gpu.ArrayInt
+        ArrayInt newArray = new ArrayInt(device, length)
 
         //track the new memory area
-        OpenMemArea newMem = new OpenMemArea(arrayHandle, new String(deviceName), 1, lengths, type)
-        openMemoryAreas.put(name, newMem)
+        openExtMemory.put(name, new ExtMemoryStore(newArray))
 
         return 
     }
 
-    void LogicalComputeDevice:createMatrix(char name[], int type, int dim, int lengths[]) {
-        HashTableItem device = distManager.mallocWhichDevice()
-        ChandleWrapper deviceHandle = device.value
-        char deviceName[] = device.key
+    void LogicalComputeDevice:createIntMatrix(char name[], int rows, int cols) {
+        Compute device = getDeviceToUse()
 
-        int clMemObj = nat.createMatrix_w(deviceHandle.handle, lengths[0], lengths[1], type)
-        ChandleWrapper matrixHandle = new ChandleWrapper(clMemObj)
+        MatrixInt newMatrix = new MatrixInt(device, rows, cols)
 
-        OpenMemArea newMem = new OpenMemArea(matrixHandle, new String(deviceName), dim, lengths, type)
-        openMemoryAreas.put(name, newMem)
+        openExtMemory.put(name, new ExtMemoryStore(newMatrix))
 
         return 
     }
 
-    bool LogicalComputeDevice:writeArray(char name[], dec fvalues[], int ivalues[]) {
-        //get memObj from HashTable
-        OpenMemArea inMem = openMemoryAreas.get(name)
-        ChandleWrapper hand = inMem.hand
-        int clMemObj = hand.handle
-
-        //get device memory object is stored on
-        String device = inMem.device
-
-        //get the write queue for this device
-        ComputeQueue q = writeQueues.get(device.string)
-        int clQueue = q.queue_cl
-
-        // if types and dimentions of parameters and memObj match do the write operation
-        if (inMem.type == Compute.FLOAT && ivalues == null && fvalues.arrayLength == inMem.lengths[0]) {
-            nat.writeFloatArray_w(clQueue, clMemObj, fvalues)
-            return true
-        }
-        else if (inMem.type == Compute.UINT && fvalues == null && ivalues.arrayLength == inMem.lengths[0]) {
-            nat.writeIntArray_w(clQueue, clMemObj, ivalues) 
-            return true
-        }
-        else {
-            int type
-            int length
-            if (fvalues == null && ivalues != null) {
-                type = Compute.UINT 
-                length = ivalues.arrayLength
-            }
-            else if (ivalues == null && fvalues != null){
-                type = Compute.FLOAT
-                length = fvalues.arrayLength
-            }
-            else if (ivalues != null && fvalues != null) {
-                type = NONE
-                length = 0
-            }
-            else {
-                type = BOTH
-                length = ivalues.arrayLength + fvalues.arrayLength
-            }
-            throw new Exception("Either the type and/or length of the primative array passed do not match the type/length of the LDC Array referenced by $(name) \n Expected: type = $(typeToString(inMem.type)) -- length = $(iu.makeString(inMem.lengths[0]))\n Got: type = $(typeToString(type)) -- length = $(iu.makeString(length))")
-        }
+    void LogicalComputeDevice:writeIntArray(char name[], int values[]) {
+        ExtMemoryStore es = openExtMemory.get(name)
+        ArrayInt arr = es.em
+        arr.write(values)
     }
 
-    Vector LogicalComputeDevice:readArray(char name[]) {
-        Vector v = new Vector()
-        OpenMemArea inMem = openMemoryAreas.get(name)
-        ChandleWrapper hand = inMem.hand
-        int clMemObj = hand.handle
-
-        String device = inMem.device
-
-        ComputeQueue q = readQueues.get(device.string)
-        int clQueue = q.queue_cl
-
-        if (inMem.type == Compute.FLOAT) {
-            dec buf[] = new dec[inMem.lengths[0]]
-
-            buf = nat.readFloatArray_w(clQueue, clMemObj, inMem.lengths[0])
-            v.fvalues = buf
-            v.ivalues = null
-            return v
-        }
-        else {
-            int buf[] = new int[inMem.lengths[0]]
-
-            buf = nat.readIntArray_w(clQueue, clMemObj, buf)
-            v.ivalues = buf
-            v.fvalues = null
-            return v
-        }
+    int[] LogicalComputeDevice:readIntArray(char name[]) {
+        ExtMemoryStore es = openExtMemory.get(name)
+        ArrayInt arr = es.em
+        return arr.read()
     }
 
-    bool LogicalComputeDevice:writeMatrix(char name[], dec fvalues[][], int ivalues[][]) {
-        OpenMemArea inMem = openMemoryAreas.get(name)
-        ChandleWrapper hand = inMem.hand
-        int memObj = hand.handle
-
-        String device = inMem.device
-
-        ComputeQueue q = writeQueues.get(device.string)
-        int clQueue = q.queue_cl
-
-        if (inMem.type == Compute.FLOAT && ivalues == null && fvalues.arrayLength == inMem.lengths[0] && fvalues[1].arrayLength == inMem.lengths[1]) {
-            nat.writeFloatMatrix_w(clQueue, memObj, fvalues) 
-            return true
-        }
-        else if (inMem.type == Compute.UINT && fvalues == null && ivalues.arrayLength == inMem.lengths[0] && ivalues[1].arrayLength == inMem.lengths[1]) {
-            nat.writeIntMatrix_w(clQueue, memObj, ivalues) 
-            return true
-        }
-        else {
-            int type
-            int lengths[] new int[2]
-            if (fvalues == null && ivalues != null) {
-                type = Compute.UINT 
-                lengths[0] = ivalues.arrayLength
-                lengths[1] = ivalues[0].arrayLength
-            }
-            else if (ivalues == null && fvalues != null){
-                type = Compute.FLOAT
-                lengths[0] = fvalues.arrayLength
-                lengths[1] = fvalues[0].arrayLength
-            }
-            else if (ivalues != null && fvalues != null) {
-                type = NONE
-                lengths[0] = 0
-                lengths[1] = 0
-            }
-            else {
-                type = BOTH
-                lengths[0] = ivalues.arrayLength + fvalues.arrayLength
-                lengths[1] = ivalues[0].arrayLength + fvalues[0].arrayLength
-            }
-            throw new Exception("Either the type and/or lengths of the primitive array passed do not match the type/lengths of the LDC Matrix referenced by $(name) \n Expected: type = $(typeToString(inMem.type)) -- lengths = $(iu.makeString(inMem.lengths[0])), $(iu.makeString(inMem.lengths[1]))\n Got: type = $(typeToString(type)) -- lengths = $(iu.makeString(lengths[0])), $(iu.makeString(lengths[1]))")
-        }
+    void LogicalComputeDevice:writeIntMatrix(char name[], int values[][]) {
+        ExtMemoryStore es = openExtMemory.get(name)
+        MatrixInt mat = es.em
+        mat.write(values)
     }
 
-    Matrix LogicalComputeDevice:readMatrix(char name[]) {
-        Matrix m = new Matrix()
-
-        OpenMemArea inMem = openMemoryAreas.get(name)
-        ChandleWrapper hand = inMem.hand
-        int memObj = hand.handle
-
-        String device = inMem.device
-
-        ComputeQueue q = readQueues.get(device.string)
-        int clQueue = q.queue_cl
-
-        if (inMem.type == Compute.FLOAT) {
-            dec buf[][] = new dec[inMem.lengths[0]][inMem.lengths[1]]
-            buf = nat.readFloatMatrix_w(clQueue, memObj, buf)
-            m.fvalues = buf
-            m.ivalues = null
-            return m
-        }
-        else {
-            int buf[][] = new int[inMem.lengths[0]][inMem.lengths[1]]
-            buf = nat.readIntMatrix_w(clQueue, memObj, buf)
-            m.ivalues = buf
-            m.fvalues = null
-            return m
-        }
+    int[][] LogicalComputeDevice:readIntMatrix(char name[]) {
+        ExtMemoryStore es = openExtMemory.get(name)
+        MatrixInt mat = es.em
+        return mat.read()
     }
 
-    void LogicalComputeDevice:destroyArray(char name[]) {
-        OpenMemArea inMem = openMemoryAreas.get(name)
-        ChandleWrapper handle = inMem.hand
-        if(handle != null) {
-            nat.destroyMemoryArea_w(handle.handle)
-        }
-        openMemoryAreas.delete(name)
-        return
+    void LogicalComputeDevice:destroyMemoryArea(char name[]) {
+        openExtMemory.delete(name)
     }
 
-    void LogicalComputeDevice:destroyMatrix(char name[]) {
-        OpenMemArea inMem = openMemoryAreas.get(name)
-        ChandleWrapper handle = inMem.hand
-        if(handle != null) {
-            nat.destroyMemoryArea_w(handle.handle)
-        }
-        openMemoryAreas.delete(name)
-        return
+    void LogicalComputeDevice:createDecArray(char name[], int length) {
+        //consult distManager for device to use
+        Compute device = getDeviceToUse()
+
+        //create gpu.ArrayInt
+        ArrayDec newArray = new ArrayDec(device, length)
+
+        //track the new memory area
+        openExtMemory.put(name, new ExtMemoryStore(newArray))
+
+        return 
     }
 
-    //take .cl source code and strip comments etc
-    char[] stripSource(char source[]) {
-        //go char by char, if '\n' then rm
-        // if '//' then rm all till next '\n'
-        // if '/*' then rm all till next '*/'
-        char stripped[] = new char[source.arrayLength]
-        char lastChar = "A"
-        char cur
-        bool inBlockComment = false
-        bool inComment = false
-        bool isNewLine = false
-        bool atStartOfComment = false
+    void LogicalComputeDevice:createDecMatrix(char name[], int rows, int cols) {
+        Compute device = getDeviceToUse()
 
-        int stripIndex = 0
-        for (int i = 0; i < source.arrayLength; i++) {
-            cur = source[i]
+        MatrixDec newMatrix = new MatrixDec(device, rows, cols)
 
-            if (cur == "\n") {
-                isNewLine = true
-                inComment = false
-            }
-            if (cur == "/" && lastChar == "/") {
-                inComment = true
-                atStartOfComment = true
-            }
-            if (cur == "*" && lastChar == "/") {
-                inBlockComment = true
-                atStartOfComment = true
-            }
-            if (cur == "/" && lastChar == "*") {
-                inBlockComment = false
-                atStartOfComment = true
-            }
+        openExtMemory.put(name, new ExtMemoryStore(newMatrix))
 
-            if (!(inBlockComment || inComment || isNewLine)) {
-                stripped[stripIndex] = source[i]
-                stripIndex++
-            }
+        return 
+    }
 
-            if (atStartOfComment) {
-                stripIndex -= 1
-            }
+    void LogicalComputeDevice:writeDecArray(char name[], dec values[]) {
+        ExtMemoryStore es = openExtMemory.get(name)
+        ArrayDec arr = es.em
+        arr.write(values)
+    }
 
-            isNewLine =  false
-            atStartOfComment = false
+    dec[] LogicalComputeDevice:readDecArray(char name[]) {
+        ExtMemoryStore es = openExtMemory.get(name)
+        ArrayDec arr = es.em
+        return arr.read()
+    }
 
-            lastChar = cur
-        }
+    void LogicalComputeDevice:writeDecMatrix(char name[], dec values[][]) {
+        ExtMemoryStore es = openExtMemory.get(name)
+        MatrixDec mat = es.em
+        mat.write(values)
+    }
 
-        return stripped
+    dec[][] LogicalComputeDevice:readDecMatrix(char name[]) {
+        ExtMemoryStore es = openExtMemory.get(name)
+        MatrixDec mat = es.em
+        return mat.read()
     }
 
     void LogicalComputeDevice:loadProgram(char path[], char name[]) {
@@ -334,123 +158,26 @@ component provides LogicalComputeDevice requires gpu.Compute,
             rawSource = new char[](rawSource, source.readLine())
             rawSource = new char[](rawSource, "\n")
         }
-
-        //give the program to the native libraray to build
-        int handles[] = nat.createProgram_w(rawSource)
-        ChandleWrapper handlesWrapped[] = new ChandleWrapper[handles.arrayLength]
-        for (int i = 0; i < handles.arrayLength; i++) {
-            ChandleWrapper hand = new ChandleWrapper(handles[i])
-            handlesWrapped[i] = hand
-            ChandleWrapperArray arr = new ChandleWrapperArray()
-            arr.array = handlesWrapped
-            programs.put(name, arr) 
-        }
-        
+        buildPrograms(rawSource, name)
     }
 
     String[] LogicalComputeDevice:getPrograms() {
-        HashTableItem progs[] = programs.getContents()
-
-        String progNames[] = new String[progs.arrayLength]
-        for (int i = 0; i < progs.arrayLength; i++) {
-            progNames[i] = new String(progs[i].key)
+        String progNames[] = new String[programs.getLength()]
+        HashTableItem items[] = programs.getContents()
+        for (int i = 0; i < programs.getLength(); i++) {
+            progNames[i] = new String(items[i].key)
         }
         return progNames
     }
 
-    bool isConst(char param[]) {
-        String exploded[] = su.explode(param, ":")
-        if (exploded[0].string == "const") {
-            return true
-        }
-        else {
-            return false
-        }
-    }
-
-    bool isFloat(char param[]) {
-        String exploded[] = su.explode(param, ":")
-        if (su.ifind(exploded[1].string, ".") == StringUtil.NOT_FOUND) {
-            return false
-        }
-        else {
-            return true
-        }
-    }
-
-    dec getDecConst(char param[]) {
-        String exploded[] = su.explode(param, ":")
-        return du.decFromString(exploded[1].string)
-    }
-
-    int getIntConst(char param[]) {
-        String exploded[] = su.explode(param, ":")
-        return iu.intFromString(exploded[1].string)
-    }
-
     void LogicalComputeDevice:runProgram(char program[], String params[]) {
-        //get the native library handles for the given program
-        ChandleWrapperArray arr = programs.get(program)
-        ChandleWrapper progHandles[] = arr.array
-
-        HashTable paramMap = new HashTable()
-        
-        int paramHandles[] = new int[params.arrayLength]
-        int outputDims[]
-        //for each parameter given
+        //TODO: check program exists
+        ExtMemory paramsOnDevice[] = new ExtMemory[params.arrayLength]
         for (int i = 0; i < params.arrayLength; i++) {
-            //if parameter is constant, pass that constant over to the gpu
-            if (isConst(params[i].string)) {
-                //uint or float?
-                if (isFloat(params[i].string)) {
-                    createArray(params[i].string, Compute.FLOAT, 1)
-                    dec vals[] = new dec[1]
-                    vals[0] = getDecConst(params[i].string)
-                    writeArray(params[i].string, vals, null)          
-                }
-                else {
-                    createArray(params[i].string, Compute.UINT, 1)
-                    int vals[] = new int[1]
-                    vals[0] = getIntConst(params[i].string)
-                    writeArray(params[i].string, null, vals)          
-                }
-            }
-
-            //retrieve the parameter from the openMemoryAreas map
-            OpenMemArea x = openMemoryAreas.get(params[i].string)
-            ChandleWrapper memHandle = x.hand
-
-            //store the raw native library handle for this parameter
-            paramHandles[i] = memHandle.handle
-            String device = x.device
-
-            //store the text version of parameter and the device it is located
-            //on for the distManager to inspect later
-            paramMap.put(params[i].string, device)
-
-            //The last parameter determins the number of threads to lauch
-            //so saving this value
-            if (i == (params.arrayLength-1)) {
-                outputDims = x.lengths
-            }
+            ExtMemoryStore es = openExtMemory.get(params[i].string)
+            paramsOnDevice[i] = es.em
         }
-
-        //for each program handle, attempt to build a kernel from it
-        //store the raw native library kernel handles
-        int paramCount = paramHandles.arrayLength
-        ChandleWrapper kernelHandles[] = new ChandleWrapper[progHandles.arrayLength]
-        int rawKerHandles[] = new int[progHandles.arrayLength]
-        for (int k = 0; k < progHandles.arrayLength; k++) {
-            int clProghandle = progHandles[k].handle
-            rawKerHandles[k] = nat.prepareKernel_w(clProghandle, paramHandles, paramCount, program)
-            kernelHandles[k] = new ChandleWrapper(rawKerHandles[k])
-        }
-        //wrap up the kernel handles
-        ChandleWrapperArray kerArr = new ChandleWrapperArray(kernelHandles)
-
-        //hand kernels over to distManager with a map describing which params are on which devices
-        distManager.execProgram(kerArr, paramMap, outputDims)
-
+        execProgram(program, paramsOnDevice)
         return
     }
 }

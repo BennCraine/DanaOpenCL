@@ -6,7 +6,7 @@ uses Compute
 interface MatrixInt extends ExtMemory {
 
     /* {"@description" : "Initlises whatever API is being used in the native library to communicated with the compute devices"} */
-    MatrixInt(store Compute device, int width, int height)
+    MatrixInt(store Compute device, int height, int width)
 
     void write(int content[][])
 

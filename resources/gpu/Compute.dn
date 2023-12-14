@@ -1,4 +1,5 @@
 uses Program
+uses ComputeArray
 
 /*
 {"description" : "This interface allows the user to interact with compute devices available to the system"}
@@ -6,10 +7,13 @@ uses Program
 interface Compute {
 
     /* {"@description" : "Initlises whatever API is being used in the native library to communicated with the compute devices"} */
-    Compute(char device[])
+    Compute(char device[], store ComputeArray computeArr)
+    
+    char[] getPlatform()
 
     char[] getDevice()
 
     /* {"@description" : "Asks the native library to execute the kernel given by 'clKernel' through the queue given by 'queue_cl' and execute it on a set of threads with dimention and size outputDims[0] * outputDims[0+i] * ..., * outputDims[n]"} */
-    void runProgram(Program p, int outputDims[])
+    void runProgram(Program p)
+
 }

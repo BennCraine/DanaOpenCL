@@ -1,0 +1,4 @@
+uses data.String
+interface ComputeArray {
+    ComputeArray(store String devicesForArray[])
+}

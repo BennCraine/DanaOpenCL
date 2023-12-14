@@ -1,7 +1,8 @@
 uses data.String
 
 interface OpenCLLib {
-    int init()
+    void init()
+    int createContextSpace()
 	void findPlatforms()
     int[] getComputeDeviceIDs()
     String[] getComputeDevices()
@@ -11,15 +12,15 @@ interface OpenCLLib {
     int createArray(int device, int length, int type, int danaComp)
     int createMatrix(int device, int width, int height, int type, int danaComp)
     void destroyMemoryArea(int memObj_cl)
-    int[] createProgram(char source[], int danaComp)
+    int createProgram(char source[], int danaComp, int device)
     void writeIntArray(int queue_cl, int memObj_cl, int values[])
-    int[] readIntArray(int queue_cl, int memObj_cl, int buf[])
+    int[] readIntArray(int queue_cl, int memObj_cl, int len)
     void writeFloatArray(int queue_cl, int memObj_cl, dec values[])
     dec[] readFloatArray(int queue_cl, int memObj_cl, int len)
-    void writeIntMatrix(int queue_cl, int memObj_cl, int buf[][])
-    int[][] readIntMatrix(int queue_cl, int memObj_cl, int buf[][])
-    void writeFloatMatrix(int queue_cl, int memObj_cl, dec buf[][])
-    dec[][] readFloatMatrix(int queue_cl, int memObj_cl, dec buf[][])
+    void writeIntMatrix(int queue_cl, int memObj_cl, int values[][])
+    int[][] readIntMatrix(int queue_cl, int memObj_cl, int lens[])
+    void writeFloatMatrix(int queue_cl, int memObj_cl, dec values[][])
+    dec[][] readFloatMatrix(int queue_cl, int memObj_cl, int lens[])
     int prepareKernel(int clProghandle, int paramHandles[], int paramCount, char program[])
     void runKernel(int clKernel, int queue_cl, int outputDims[])
 }
@@ -27,45 +28,84 @@ interface OpenCLLib {
 const int FLOAT = 0
 const int UINT = 1
 
-component provides ComputeInfo, Compute(Destructor), Program(Destructor), ArrayInt(Destructor), ArrayDec(Destructor), MatrixInt(Destructor), MatrixDec(Destructor) requires native OpenCLLib lib, io.Output out {
+component provides ComputeArray(Destructor), ComputeInfo, Compute(Destructor), Program(Destructor), ArrayInt(Destructor), ArrayDec(Destructor), MatrixInt(Destructor), MatrixDec(Destructor) requires native OpenCLLib lib, io.Output out {
 
     implementation ComputeInfo {
 
         /* {"@description" : "Returns all the devices (by name) available to the system"} */
         String[] ComputeInfo:getDevices()
             {
+            lib.init()
             return lib.getComputeDevices()
             }
     }
+
+    implementation ComputeArray {
+        int handle
+        String devices[]
+
+        ComputeArray:ComputeArray(store String devicesForArray[]) {
+            devices = devicesForArray
+            handle = lib.createContextSpace()
+
+            int systemDeviceIDs[] = lib.getComputeDeviceIDs()
+            String systemDevices[] = lib.getComputeDevices()
+
+            int deviceIDsForArray[] = new int[devicesForArray.arrayLength]
+
+            for (int i = 0; i < deviceIDsForArray.arrayLength; i++)
+                {
+                for (int k = 0; k < devices.arrayLength; k++)
+                    {
+                    if (devices[i].string == systemDevices[k].string)
+                        {
+                        deviceIDsForArray[i] = systemDeviceIDs[k]
+                        }
+                    else if (k == devices.arrayLength-1) 
+                        {
+                        throw new Exception("Device not recognised")
+                        }
+                    }
+                }
+            lib.createContext(deviceIDsForArray, handle)
+        }
+        
+        void Destructor:destroy(){}
+    }
     
     implementation Compute {
-        int handle
+        ComputeArray ca
         char device[]
-        int deviceID
+        char platform[]
+        int deviceHandle
         int queueHandle
 
         /* {"@description" : "Initlises whatever API is being used in the native library to communicated with the compute devices"} */
-        Compute:Compute(char dev[])
+        Compute:Compute(char dev[], ComputeArray computeArr)
             {
-            handle = lib.init()
-
             device = dev
+            ca = computeArr
 
-            int deviceIDs[] = lib.getComputeDeviceIDs()
-            String devices[] = lib.getComputeDevices()
+            int systemDeviceIDs[] = lib.getComputeDeviceIDs()
+            String systemDevices[] = lib.getComputeDevices()
 
-            for (int i = 0; i < devices.arrayLength; i++)
+            for (int i = 0; i < systemDevices.arrayLength; i++)
                 {
-                if (devices[i].string == device)
+                if (systemDevices[i].string == device)
                     {
-                    deviceID = deviceIDs[i]
-                    break
+                    deviceHandle = systemDeviceIDs[i]
+                    }
+                else if (i = systemDevices.arrayLength-1)
+                    {
+                    throw new Exception("Device not recognised")
                     }
                 }
-            
-            lib.createContext(deviceID, handle)
 
-            queueHandle = lib.createSynchQueue(deviceID, handle)
+            queueHandle = lib.createSynchQueue(deviceHandle, ca.handle)
+            if (queueHandle == 0) 
+                {
+                throw new Exception("Queue Creation Failed")
+                }
             }
         
         char[] Compute:getDevice()
@@ -73,11 +113,16 @@ component provides ComputeInfo, Compute(Destructor), Program(Destructor), ArrayI
             return device
             }
 
+        char[] Compute:getPlatform()
+            {
+            return platform
+            }
+
         /* {"@description" : "Asks the native library to execute the kernel given by 'clKernel' through the queue given by 'queue_cl' and execute it on a set of threads with dimention and size outputDims[0] * outputDims[0+i] * ..., * outputDims[n]"} */
-        void Compute:runProgram(Program p, int outputDims[])
+        void Compute:runProgram(Program p)
             {
             int khandle = lib.prepareKernel(p.phandle, p.paramHandles, p.paramHandles.arrayLength, p.functionName)
-            lib.runKernel(khandle, queueHandle, outputDims)
+            lib.runKernel(khandle, queueHandle, p.outputDims)
             }
         
         void Destructor:destroy()
@@ -92,21 +137,78 @@ component provides ComputeInfo, Compute(Destructor), Program(Destructor), ArrayI
         char program[]
         char functionName[]
         int paramHandles[]
+        int outputDims[]
         
         Program:Program(store Compute device, char fName[], char source[])
             {
-            int res[] = lib.createProgram(source, device.handle)
-            phandle = res[0]
-            program = source
+            program = stripSource(source)
+            phandle = lib.createProgram(program, device.ca.handle, device.deviceHandle)
             functionName = fName
             }
 
+        //take .cl source code and strip comments etc
+        char[] stripSource(char source[]) {
+            //go char by char, if '\n' then rm
+            // if '//' then rm all till next '\n'
+            // if '/*' then rm all till next '*/'
+            char stripped[] = new char[source.arrayLength]
+            char lastChar = "A"
+            char cur
+            bool inBlockComment = false
+            bool inComment = false
+            bool isNewLine = false
+            bool atStartOfComment = false
+
+            int stripIndex = 0
+            for (int i = 0; i < source.arrayLength; i++) {
+                cur = source[i]
+
+                if (cur == "\n") {
+                    isNewLine = true
+                    inComment = false
+                }
+                if (cur == "/" && lastChar == "/") {
+                    inComment = true
+                    atStartOfComment = true
+                }
+                if (cur == "*" && lastChar == "/") {
+                    inBlockComment = true
+                    atStartOfComment = true
+                }
+                if (cur == "/" && lastChar == "*") {
+                    inBlockComment = false
+                    atStartOfComment = true
+                }
+
+                if (!(inBlockComment || inComment || isNewLine)) {
+                    stripped[stripIndex] = source[i]
+                    stripIndex++
+                }
+
+                if (atStartOfComment) {
+                    stripIndex -= 1
+                }
+
+                isNewLine =  false
+                atStartOfComment = false
+
+                lastChar = cur
+            }
+
+            return stripped
+        }
+
         void Program:setParameters(ExtMemory parameters[])
             {
+            //TODO calc outputDims
             paramHandles = new int[parameters.arrayLength]
             for (int i = 0; i < paramHandles.arrayLength; i++)
                 {
                 paramHandles[i] = parameters[i].getMemoryLoc()
+                if (i == paramHandles.arrayLength-1)
+                    {
+                    outputDims = parameters[i].getDimentionLengths()
+                    }
                 }
             }
         
@@ -123,13 +225,17 @@ component provides ComputeInfo, Compute(Destructor), Program(Destructor), ArrayI
 
         ArrayInt:ArrayInt(store Compute device, int length)
             {
-            handle = lib.createArray(device.deviceID, length, UINT, device.handle)
+            handle = lib.createArray(device.deviceHandle, length, UINT, device.ca.handle)
             len = length
             dev = device
             }
 
         void ArrayInt:write(int content[])
             {
+            if (content.arrayLength > len)
+                {
+                throw new Exception("Writing over boundary")
+                }
             lib.writeIntArray(dev.queueHandle, handle, content)
             }
 
@@ -141,6 +247,12 @@ component provides ComputeInfo, Compute(Destructor), Program(Destructor), ArrayI
         int ArrayInt:getMemoryLoc()
             {
             return handle
+            }
+
+        int[] ArrayInt:getDimentionLengths()
+            {
+            int dimLen[] = new int[](len)
+            return dimLen
             }
         
         void Destructor:destroy()
@@ -156,13 +268,17 @@ component provides ComputeInfo, Compute(Destructor), Program(Destructor), ArrayI
 
         ArrayDec:ArrayDec(store Compute device, int length)
             {
-            handle = lib.createArray(device.deviceID, length, FLOAT, device.handle)
+            handle = lib.createArray(device.deviceHandle, length, FLOAT, device.ca.handle)
             dev = device
             len = length
             }
 
         void ArrayDec:write(dec content[])
             {
+            if (content.arrayLength > len)
+                {
+                throw new Exception("Writing over boundary")
+                }
             lib.writeFloatArray(dev.queueHandle, handle, content)
             }
 
@@ -175,6 +291,12 @@ component provides ComputeInfo, Compute(Destructor), Program(Destructor), ArrayI
             {
             return handle
             }
+
+        int[] ArrayDec:getDimentionLengths()
+            {
+            int dimLen[] = new int[](len)
+            return dimLen
+            }
         
         void Destructor:destroy()
             {
@@ -185,30 +307,40 @@ component provides ComputeInfo, Compute(Destructor), Program(Destructor), ArrayI
     implementation MatrixInt {
         int handle
         Compute dev
-        int w
-        int h
+        int rows
+        int cols
 
-        MatrixInt:MatrixInt(store Compute device, int width, int height)
+        MatrixInt:MatrixInt(store Compute device, int height, int width)
             {
-            handle = lib.createMatrix(device.deviceID, width, height, UINT, device.handle)
             dev = device
-            w = width
-            h = height
+            rows = height
+            cols = width
+            handle = lib.createMatrix(device.deviceHandle, rows, cols, UINT, device.ca.handle)
             }
 
         void MatrixInt:write(int content[][])
             {
+            if (content.arrayLength > rows || content[0].arrayLength > cols)
+                {
+                throw new Exception("Writing Over Boundary")
+                }
             lib.writeIntMatrix(dev.queueHandle, handle, content)
             }
 
         int[][] MatrixInt:read()
             {
-            return lib.readIntMatrix(dev.queueHandle, handle, null)
+            return lib.readIntMatrix(dev.queueHandle, handle, new int[](rows, cols))
             }
         
         int MatrixInt:getMemoryLoc()
             {
             return handle
+            }
+
+        int[] MatrixInt:getDimentionLengths()
+            {
+            int dimLen[] = new int[](rows, cols)
+            return dimLen
             }
         
         void Destructor:destroy()
@@ -220,30 +352,40 @@ component provides ComputeInfo, Compute(Destructor), Program(Destructor), ArrayI
     implementation MatrixDec {
         int handle
         Compute dev
-        int w
-        int h
+        int rows
+        int cols
 
-        MatrixDec:MatrixDec(store Compute device, int width, int height)
+        MatrixDec:MatrixDec(store Compute device, int height, int width)
             {
-            handle = lib.createMatrix(device.deviceID, width, height, FLOAT, device.handle)
             dev = device
-            w = width
-            h = height
+            rows = height
+            cols = width
+            handle = lib.createMatrix(device.deviceHandle, rows, cols, FLOAT, device.ca.handle)
             }
 
         void MatrixDec:write(dec content[][])
             {
+            if (content == null || content.arrayLength > rows || content[0] == null || content[0].arrayLength > cols)
+                {
+                throw new Exception("Writing Over Boundary")
+                }
             lib.writeFloatMatrix(dev.queueHandle, handle, content)
             }
 
         dec[][] MatrixDec:read()
             {
-            return lib.readFloatMatrix(dev.queueHandle, handle, null)
+            return lib.readFloatMatrix(dev.queueHandle, handle, new int[](rows, cols))
             }
         
         int MatrixDec:getMemoryLoc()
             {
             return handle
+            }
+
+        int[] MatrixDec:getDimentionLengths()
+            {
+            int dimLen[] = new int[](rows, cols)
+            return dimLen
             }
         
         void Destructor:destroy()

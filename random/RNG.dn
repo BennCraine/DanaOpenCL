@@ -16,98 +16,94 @@ component provides random.RNG requires gpu.LogicalComputeDevice {
     }
 
     dec[][] RNG:randomMatrixDec(int rows, int cols, dec lo, dec hi) {
-        myDev.createMatrix("A", Compute.FLOAT, 2, new int[](rows, cols))
-        myDev.createArray("B", Compute.FLOAT, 2)
-        myDev.createArray("seed", Compute.UINT, 1)
+        myDev.createDecMatrix("A", rows, cols)
+        myDev.createDecArray("B", 2)
+        myDev.createIntArray("seed", 1)
 
         dec lohi[] = new dec[](lo, hi)
-        myDev.writeArray("B", lohi, null)
+        myDev.writeDecArray("B", lohi)
 
         int seed[] = new int[](mySeed)
-        myDev.writeArray("seed", null, seed)
+        myDev.writeIntArray("seed", seed)
 
         String params[] = new String[](new String("seed"), new String("B"), new String("A"))
         myDev.runProgram("randmatd", params)
 
-        Matrix m = myDev.readMatrix("A")
-        dec returnVal[][] = m.fvalues
+        dec m[][] = myDev.readDecMatrix("A")
 
-        myDev.destroyMatrix("A")
-        myDev.destroyArray("B")
-        myDev.destroyArray("seed")
+        myDev.destroyMemoryArea("A")
+        myDev.destroyMemoryArea("B")
+        myDev.destroyMemoryArea("seed")
 
-        return returnVal
+        return m
     }
 
     int[][] RNG:randomMatrixInt(int rows, int cols, int lo, int hi) {
-        myDev.createMatrix("A", Compute.UINT, 2, new int[](rows, cols))
-        myDev.createArray("B", Compute.UINT, 2)
-        myDev.createArray("seed", Compute.UINT, 1)
+        myDev.createIntMatrix("A", rows, cols)
+        myDev.createIntArray("B", 2)
+        myDev.createIntArray("seed", 1)
 
         int lohi[] = new int[](lo, hi)
-        myDev.writeArray("B", null, lohi)
+        myDev.writeIntArray("B",lohi)
 
         int seed[] = new int[](mySeed)
-        myDev.writeArray("seed", null, seed)
+        myDev.writeIntArray("seed", seed)
 
         String params[] = new String[](new String("seed"), new String("B"), new String("A"))
         myDev.runProgram("randmati", params)
 
-        Matrix m = myDev.readMatrix("A")
-        int returnVal[][] = m.ivalues
+        int m[][] = myDev.readIntMatrix("A")
 
-        myDev.destroyMatrix("A")
-        myDev.destroyArray("B")
-        myDev.destroyArray("seed")
+        myDev.destroyMemoryArea("A")
+        myDev.destroyMemoryArea("B")
+        myDev.destroyMemoryArea("seed")
 
-        return returnVal
+        return m
     }
+
     dec[] RNG:randomVectorDec(int len, dec lo, dec hi) {
-        myDev.createArray("A", Compute.FLOAT, len)
-        myDev.createArray("B", Compute.FLOAT, 2)
-        myDev.createArray("seed", Compute.UINT, 1)
+        myDev.createDecArray("A", len)
+        myDev.createDecArray("B", 2)
+        myDev.createIntArray("seed", 1)
 
         dec lohi[] = new dec[](lo, hi)
-        myDev.writeArray("B", lohi, null)
+        myDev.writeDecArray("B", lohi)
 
         int seed[] = new int[](mySeed)
-        myDev.writeArray("seed", null, seed)
+        myDev.writeIntArray("seed", seed)
 
         String params[] = new String[](new String("seed"), new String("B"), new String("A"))
         myDev.runProgram("randvecd", params)
 
-        Vector v = myDev.readArray("A")
-        dec returnVal[] = v.fvalues
+        dec returnVal[] = myDev.readDecArray("A")
 
-        myDev.destroyArray("A")
-        myDev.destroyArray("B")
-        myDev.destroyArray("seed")
+        myDev.destroyMemoryArea("A")
+        myDev.destroyMemoryArea("B")
+        myDev.destroyMemoryArea("seed")
 
         return returnVal
     }
 
     int[] RNG:randomVectorInt(int len, int lo, int hi) {
-        myDev.createArray("A", Compute.UINT, len)
-        myDev.createArray("B", Compute.UINT, 2)
-        myDev.createArray("seed", Compute.UINT, 1)
+        myDev.createIntArray("A", len)
+        myDev.createIntArray("B", 2)
+        myDev.createIntArray("seed", 1)
 
         int lohi[] = new int[](lo, hi)
-        myDev.writeArray("B", null, lohi)
+        myDev.writeIntArray("B", lohi)
 
         int seed[] = new int[](mySeed)
-        myDev.writeArray("seed", null, seed)
+        myDev.writeIntArray("seed", seed)
 
         String params[] = new String[](new String("seed"), new String("B"), new String("A"))
         myDev.runProgram("randveci", params)
 
-        Vector v = myDev.readArray("A")
-        int returnVal[] = v.ivalues
+        int returnVal[] = myDev.readIntArray("A")
 
-        myDev.destroyArray("A")
-        myDev.destroyArray("B")
-        myDev.destroyArray("seed")
+        myDev.destroyMemoryArea("A")
+        myDev.destroyMemoryArea("B")
+        myDev.destroyMemoryArea("seed")
 
         return returnVal
-
     }
 }

@@ -13,10 +13,12 @@ component provides App requires linear.LinearOperations,
                                 stats.Matrix mat
                                 {
     int App:main(AppParam params[]) {
+        /*
         LogicalComputeDevice ldc = new LogicalComputeDevice()
         ldc.createMatrix("M", Compute.FLOAT, 2, new int[](10, 10))
         int ints[][]= new int[][](new int[](1,4,2))
         ldc.writeMatrix("M", null, ints)
+        */
 
         LinearOperations ops = new LinearOperations()
         LinearOperations opst = new LinearOperations()
@@ -125,6 +127,7 @@ component provides App requires linear.LinearOperations,
         out.print("\n")
 
         decMat = rz.chopColumnDec(decMat, 0, 2)
+        out.println("of interest")
         for (int i = 0; i < decMat.arrayLength; i++) {
             for (int k = 0; k < decMat[0].arrayLength; k++) {
                 out.print("| $(du.makeString(decMat[i][k])) | ")

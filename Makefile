@@ -123,10 +123,6 @@ opencl:
 	dnc ./gpu/Compute.dn -gni
 	$(CP_CMD) ./OpenCLLib_dni.c ./resources-ext/
 	rm ./OpenCLLib_dni.c
-	dnc ./gpu/ComputeStats.dn
-	dnc ./gpu/DefaultDistManager.dn
-	dnc ./gpu/IntelDefaultDistManager.dn
-	dnc ./gpu/NvidiaDefaultDistManager.dn
 	dnc ./gpu/LogicalComputeDevice.dn
 	dnc ./dataprocessing/TypeConversion.dn
 	dnc ./dataprocessing/Normalisation.dn

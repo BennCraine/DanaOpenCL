@@ -7,20 +7,21 @@ component provides dataprocessing.Normalisation requires gpu.LogicalComputeDevic
     }
 
     dec[][] Normalisation:matrixDivision(dec matrix[][], dec divider) {
-        myDev.createMatrix("mat", Compute.FLOAT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
-        myDev.writeMatrix("mat", matrix, null)
-        myDev.createMatrix("out", Compute.FLOAT, 2, new int[](matrix.arrayLength, matrix[0].arrayLength))
+        myDev.createDecMatrix("mat", matrix.arrayLength, matrix[0].arrayLength)
+        myDev.writeDecMatrix("mat", matrix)
+        myDev.createDecMatrix("out", matrix.arrayLength, matrix[0].arrayLength)
+        myDev.createDecArray("divider", 1)
+        myDev.writeDecArray("divider", new dec[](divider))
 
-        String params[] = new String[](new String("const:$(du.makeString(divider))"), new String("mat"), new String("out"))
+        String params[] = new String[](new String("divider"), new String("mat"), new String("out"))
         myDev.runProgram("floatDiv", params)
 
-        Matrix m = myDev.readMatrix("out")
-        dec returnVal[][] = m.fvalues
+        dec m[][] = myDev.readDecMatrix("out")
 
-        myDev.destroyMatrix("mat")
-        myDev.destroyMatrix("out")
-        myDev.destroyArray("const:$(du.makeString(divider))")
+        myDev.destroyMemoryArea("mat")
+        myDev.destroyMemoryArea("out")
+        myDev.destroyMemoryArea("divider")
 
-        return returnVal
+        return m
     }
 }
