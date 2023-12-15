@@ -123,7 +123,7 @@ opencl:
 	dnc ./gpu/Compute.dn -gni
 	$(CP_CMD) ./OpenCLLib_dni.c ./resources-ext/
 	rm ./OpenCLLib_dni.c
-	dnc ./gpu/LogicalComputeDevice.dn
+	dnc ./gpu/LogicalCompute.dn
 	dnc ./dataprocessing/TypeConversion.dn
 	dnc ./dataprocessing/Normalisation.dn
 	dnc ./dataprocessing/Resizing.dn

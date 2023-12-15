@@ -1,10 +1,10 @@
-component provides random.RNG requires gpu.LogicalComputeDevice {
-    LogicalComputeDevice myDev
+component provides random.RNG requires gpu.LogicalCompute {
+    LogicalCompute myDev
     int mySeed
 
     RNG:RNG() {
         mySeed = 832409284
-        myDev = new LogicalComputeDevice()
+        myDev = new LogicalCompute()
         myDev.loadProgram("./resources-ext/opencl_kernels/random/randmatd.cl", "randmatd")
         myDev.loadProgram("./resources-ext/opencl_kernels/random/randmati.cl", "randmati")
         myDev.loadProgram("./resources-ext/opencl_kernels/random/randvecd.cl", "randvecd")

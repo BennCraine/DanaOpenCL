@@ -1,8 +1,8 @@
-component provides dataprocessing.Normalisation requires gpu.LogicalComputeDevice, data.DecUtil du{
-    LogicalComputeDevice myDev
+component provides dataprocessing.Normalisation requires gpu.LogicalCompute, data.DecUtil du{
+    LogicalCompute myDev
 
     Normalisation:Normalisation() {
-        myDev = new LogicalComputeDevice()
+        myDev = new LogicalCompute()
         myDev.loadProgram("./resources-ext/opencl_kernels/dataprocessing/floatDiv.cl", "floatDiv")
     }
 

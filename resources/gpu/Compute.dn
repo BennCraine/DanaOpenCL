@@ -6,14 +6,16 @@ uses ComputeArray
 */
 interface Compute {
 
-    /* {"@description" : "Initlises whatever API is being used in the native library to communicated with the compute devices"} */
+    /* {"@description" : "Create the instance to interact with the device identified by the name 'device'. The computeArr is how this compute device is binded to the native API"} */
     Compute(char device[], store ComputeArray computeArr)
     
+    /* {"@description" : "Indentifies which compute platform this device belongs to, e.g. CUDA"} */
     char[] getPlatform()
 
+    /* {"@description" : "Indentifies the device by name"} */
     char[] getDevice()
 
-    /* {"@description" : "Asks the native library to execute the kernel given by 'clKernel' through the queue given by 'queue_cl' and execute it on a set of threads with dimention and size outputDims[0] * outputDims[0+i] * ..., * outputDims[n]"} */
+    /* {"@description" : "Runs program p on this compute device"} */
     void runProgram(Program p)
 
 }

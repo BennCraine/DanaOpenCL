@@ -2,10 +2,10 @@
 {"description" : "A set of functions for generating random vectors and matricies. <b> CAUTION: Please inspect the underlying implinetation of this interface before using the psudo-random numbers for security sensitive applications! </b>"}
 */
 interface RNG {
-    /* {"@description" : "Allows the implimenting component to initilise any external compute device it intendes to use"} */
+    /* {"@description" : "Allows the implementing component to initilise any external compute device it intendes to use"} */
     RNG()
 
-    /* {"@description" : "Set a 'seed' value for the underlying random number generator. Depending on the implimenting component and your intended use case, this value should be something like the current time"} */
+    /* {"@description" : "Set a 'seed' value for the underlying random number generator. Depending on the implementing component and your intended use case, this value should be something like the current time"} */
     void setSeed(int seed)
 
     /* {"@description" : "Returns a decimal matrix of 'rows' number of rows and 'cols' number of columns which cells are populated with psudo-random numbers between 'lo' and 'hi' in value"} */

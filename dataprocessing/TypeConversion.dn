@@ -1,8 +1,8 @@
-component provides dataprocessing.TypeConversion requires gpu.LogicalComputeDevice {
-    LogicalComputeDevice myDev
+component provides dataprocessing.TypeConversion requires gpu.LogicalCompute {
+    LogicalCompute myDev
 
     TypeConversion:TypeConversion() {
-        myDev = new LogicalComputeDevice()
+        myDev = new LogicalCompute()
         myDev.loadProgram("./resources-ext/opencl_kernels/dataprocessing/intToDouble.cl", "intToDouble")
     }
 

@@ -1,9 +1,9 @@
-component provides linear.LinearOperations requires gpu.LogicalComputeDevice, data.DecUtil du, data.IntUtil iu {
+component provides linear.LinearOperations requires gpu.LogicalCompute, data.DecUtil du, data.IntUtil iu {
 
-    LogicalComputeDevice myDev
+    LogicalCompute myDev
 
     LinearOperations:LinearOperations() {
-        myDev = new LogicalComputeDevice()
+        myDev = new LogicalCompute()
         myDev.loadProgram("./resources-ext/opencl_kernels/linear/vaddi.cl", "vaddi")
         myDev.loadProgram("./resources-ext/opencl_kernels/linear/vaddd.cl", "vaddd")
         myDev.loadProgram("./resources-ext/opencl_kernels/linear/vectorscalei.cl", "vscalei")

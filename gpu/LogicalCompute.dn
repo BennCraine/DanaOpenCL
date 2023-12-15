@@ -4,11 +4,10 @@ data ExtMemoryStore {
 data ProgramStore {
     Program p
 }
-component provides gpu.LogicalComputeDevice requires gpu.Compute,
+component provides gpu.LogicalCompute requires gpu.Compute,
                                                 gpu.ComputeArray,
                                                 gpu.Program,
                                                 gpu.ComputeInfo,
-                                                gpu.ComputeDistributionManager,
                                                 gpu.ExtMemory,
                                                 gpu.ArrayInt,
                                                 gpu.ArrayDec,
@@ -25,7 +24,7 @@ component provides gpu.LogicalComputeDevice requires gpu.Compute,
     HashTable programs
     HashTable openExtMemory
 
-    LogicalComputeDevice:LogicalComputeDevice() {
+    LogicalCompute:LogicalCompute() {
         openExtMemory = new HashTable()
         programs = new HashTable()
         hardwareInfo = new ComputeInfo()
@@ -52,7 +51,7 @@ component provides gpu.LogicalComputeDevice requires gpu.Compute,
         boundDevice.runProgram(p)
     }
 
-    void LogicalComputeDevice:createIntArray(char name[], int length) {
+    void LogicalCompute:createIntArray(char name[], int length) {
         //consult distManager for device to use
         Compute device = getDeviceToUse()
 
@@ -65,7 +64,7 @@ component provides gpu.LogicalComputeDevice requires gpu.Compute,
         return 
     }
 
-    void LogicalComputeDevice:createIntMatrix(char name[], int rows, int cols) {
+    void LogicalCompute:createIntMatrix(char name[], int rows, int cols) {
         Compute device = getDeviceToUse()
 
         MatrixInt newMatrix = new MatrixInt(device, rows, cols)
@@ -75,35 +74,35 @@ component provides gpu.LogicalComputeDevice requires gpu.Compute,
         return 
     }
 
-    void LogicalComputeDevice:writeIntArray(char name[], int values[]) {
+    void LogicalCompute:writeIntArray(char name[], int values[]) {
         ExtMemoryStore es = openExtMemory.get(name)
         ArrayInt arr = es.em
         arr.write(values)
     }
 
-    int[] LogicalComputeDevice:readIntArray(char name[]) {
+    int[] LogicalCompute:readIntArray(char name[]) {
         ExtMemoryStore es = openExtMemory.get(name)
         ArrayInt arr = es.em
         return arr.read()
     }
 
-    void LogicalComputeDevice:writeIntMatrix(char name[], int values[][]) {
+    void LogicalCompute:writeIntMatrix(char name[], int values[][]) {
         ExtMemoryStore es = openExtMemory.get(name)
         MatrixInt mat = es.em
         mat.write(values)
     }
 
-    int[][] LogicalComputeDevice:readIntMatrix(char name[]) {
+    int[][] LogicalCompute:readIntMatrix(char name[]) {
         ExtMemoryStore es = openExtMemory.get(name)
         MatrixInt mat = es.em
         return mat.read()
     }
 
-    void LogicalComputeDevice:destroyMemoryArea(char name[]) {
+    void LogicalCompute:destroyMemoryArea(char name[]) {
         openExtMemory.delete(name)
     }
 
-    void LogicalComputeDevice:createDecArray(char name[], int length) {
+    void LogicalCompute:createDecArray(char name[], int length) {
         //consult distManager for device to use
         Compute device = getDeviceToUse()
 
@@ -116,7 +115,7 @@ component provides gpu.LogicalComputeDevice requires gpu.Compute,
         return 
     }
 
-    void LogicalComputeDevice:createDecMatrix(char name[], int rows, int cols) {
+    void LogicalCompute:createDecMatrix(char name[], int rows, int cols) {
         Compute device = getDeviceToUse()
 
         MatrixDec newMatrix = new MatrixDec(device, rows, cols)
@@ -126,31 +125,31 @@ component provides gpu.LogicalComputeDevice requires gpu.Compute,
         return 
     }
 
-    void LogicalComputeDevice:writeDecArray(char name[], dec values[]) {
+    void LogicalCompute:writeDecArray(char name[], dec values[]) {
         ExtMemoryStore es = openExtMemory.get(name)
         ArrayDec arr = es.em
         arr.write(values)
     }
 
-    dec[] LogicalComputeDevice:readDecArray(char name[]) {
+    dec[] LogicalCompute:readDecArray(char name[]) {
         ExtMemoryStore es = openExtMemory.get(name)
         ArrayDec arr = es.em
         return arr.read()
     }
 
-    void LogicalComputeDevice:writeDecMatrix(char name[], dec values[][]) {
+    void LogicalCompute:writeDecMatrix(char name[], dec values[][]) {
         ExtMemoryStore es = openExtMemory.get(name)
         MatrixDec mat = es.em
         mat.write(values)
     }
 
-    dec[][] LogicalComputeDevice:readDecMatrix(char name[]) {
+    dec[][] LogicalCompute:readDecMatrix(char name[]) {
         ExtMemoryStore es = openExtMemory.get(name)
         MatrixDec mat = es.em
         return mat.read()
     }
 
-    void LogicalComputeDevice:loadProgram(char path[], char name[]) {
+    void LogicalCompute:loadProgram(char path[], char name[]) {
         TextFile source = new TextFile(path, File.READ)
         int sizeInBytes = source.getSize()
         char rawSource[]
@@ -161,7 +160,7 @@ component provides gpu.LogicalComputeDevice requires gpu.Compute,
         buildPrograms(rawSource, name)
     }
 
-    String[] LogicalComputeDevice:getPrograms() {
+    String[] LogicalCompute:getPrograms() {
         String progNames[] = new String[programs.getLength()]
         HashTableItem items[] = programs.getContents()
         for (int i = 0; i < programs.getLength(); i++) {
@@ -170,7 +169,7 @@ component provides gpu.LogicalComputeDevice requires gpu.Compute,
         return progNames
     }
 
-    void LogicalComputeDevice:runProgram(char program[], String params[]) {
+    void LogicalCompute:runProgram(char program[], String params[]) {
         //TODO: check program exists
         ExtMemory paramsOnDevice[] = new ExtMemory[params.arrayLength]
         for (int i = 0; i < params.arrayLength; i++) {

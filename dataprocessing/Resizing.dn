@@ -1,8 +1,8 @@
-component provides dataprocessing.Resizing requires gpu.LogicalComputeDevice, data.IntUtil iu {
-    LogicalComputeDevice myDev
+component provides dataprocessing.Resizing requires gpu.LogicalCompute, data.IntUtil iu {
+    LogicalCompute myDev
 
     Resizing:Resizing() {
-        myDev = new LogicalComputeDevice()
+        myDev = new LogicalCompute()
         myDev.loadProgram("./resources-ext/opencl_kernels/dataprocessing/chopColumnI.cl", "chopColumnI")
         myDev.loadProgram("./resources-ext/opencl_kernels/dataprocessing/chopColumnF.cl", "chopColumnF")
         myDev.loadProgram("./resources-ext/opencl_kernels/dataprocessing/chopRowI.cl", "chopRowI")
