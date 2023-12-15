@@ -6,13 +6,13 @@ uses ComputeArray
 */
 interface Compute {
 
-    /* {"@description" : "Create the instance to interact with the device identified by the name 'device'. The computeArr is how this compute device is binded to the native API"} */
+    /* {"@description" : "Create an instance to interact with the device identified by the name 'device'. The computeArr is how this compute device is binded to the native API"} */
     Compute(char device[], store ComputeArray computeArr)
     
-    /* {"@description" : "Indentifies which compute platform this device belongs to, e.g. CUDA"} */
+    /* {"@description" : "Identifies which compute platform this device belongs to, e.g. CUDA"} */
     char[] getPlatform()
 
-    /* {"@description" : "Indentifies the device by name"} */
+    /* {"@description" : "Identifies the device by name"} */
     char[] getDevice()
 
     /* {"@description" : "Runs program p on this compute device"} */

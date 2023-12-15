@@ -1,60 +1,78 @@
-<html><head><link href="../..//doc.css" rel="stylesheet" type="text/css"><title>Package documentation</title></head><div class = "docMainColumn"><h1 id = "anchor0">Dana Compute Package</h1><p>The Dana Compute package allows you to interact with compute devices on your system.</p><p>There are three main levels of abstraction in this package to interact with compute devices. Depending on your inteded application one may be better than the others.</p><h1 id = "anchor1">Utility Interfaces</h1><p>The first of these is the easiest way to interact with external compute devices on your system. These are a set of utility functions commonly associated with using hardware accelleration to process large datasets. For example the RNG package can be used to generate large amounts of psudo-random numbers in paralell, and the LinearOperations interface impliments tasks such as matrix multiplication on an external compute device to leverage high levels of paralellisation.</p><p>Accessing these utilities is done in the usual Dana way of requiring them in any component you're building and calling their functions:</p><code><pre><span class = "keywords_a">component</span> <span class = "keywords_a">provides</span> App <span class = "keywords_a">requires</span> compute.alg.LinearOperations {
+<html><head><link href="../..//doc.css" rel="stylesheet" type="text/css"><title>Package documentation</title></head><div class = "docMainColumn"><h1 id = "anchor0">Dana Compute Package</h1><p>The Dana Compute package allows you to interact with compute devices on your system.</p><p>There are three main levels of abstraction in this package to interact with compute devices. Depending on your intended application one may be better than the others.</p><h1 id = "anchor1">Apps Interfaces</h1><p>The first of these is the easiest way to interact with external compute devices on your system. These are a set of apps whose functions are commonly associated with using hardware acceleration to process large datasets. For example the RNG app can be used to generate large amounts of pseudo-random numbers in parallel, and the LinearOperations app implements tasks such as matrix multiplication on an external compute device to leverage high levels of parallelisation.</p><p>Accessing these apps interfaces is done in the usual Dana way of requiring them in any component you're building and calling their functions:</p><code><pre><span class = "keywords_a">component</span> <span class = "keywords_a">provides</span> App <span class = "keywords_a">requires</span> compute.apps.LinearOperations {
 
-    <span class = "keywords_b">int</span> App:main(AppParam params[])
-        {
-        LinearOperations linear = <span class = "keywords_b">new</span> LinearOperations()
-				 <span class = "keywords_b">dec</span> matrixOne[][] = <span class = "keywords_b">new</span> <span class = "keywords_b">dec</span>[500][500]
-				 <span class = "keywords_b">dec</span> matrixTwo[][] = <span class = "keywords_b">new</span> <span class = "keywords_b">dec</span>[500][500]
+	<span class = "keywords_b">int</span> App:main(AppParam params[])
+    	{
+    	LinearOperations linear = <span class = "keywords_b">new</span> LinearOperations()
+   			  <span class = "keywords_b">dec</span> matrixOne[][] = <span class = "keywords_b">new</span> <span class = "keywords_b">dec</span>[500][500]
+   			  <span class = "keywords_b">dec</span> matrixTwo[][] = <span class = "keywords_b">new</span> <span class = "keywords_b">dec</span>[500][500]
 
-				 <span class = "src_comment">// populate the matricies</span>
+   			  <span class = "src_comment">// populate the matrices</span>
 
-				 <span class = "keywords_b">dec</span> matrixThree[][] = linear.matrixMultiply(matrixOne, matrixTwo)
+   			  <span class = "keywords_b">dec</span> matrixThree[][] = linear.matrixMultiply(matrixOne, matrixTwo)
 
-				 <span class = "keywords_b">return</span> 0
-        }
-    }</code></pre><h1 id = "anchor2">LogicalCompute Interface</h1><p>The second of the abstraction levels is the LogicalCompute (link to interface page) interface. This is an easy way to get up and running transfereing data and executing instructions on an external compute device. It gives the user a space to declare, read and write variables along with loading programs that operate on the varibales that have been declared. Users of this interface need not be concerned with exactly which external devices are being used, and if more than one is being used the user of the LogicalCompute won't need to decide which physical device to write data to or execute programs on.</p><p>The utility functions discussed above typically use this interface to implement their behaviour. The general workflow is as follows:</p><ol><li>Declare a set of variable</li><li>Write some data to the variables</li><li>Load a program</li><li>Run the program on a set of the declared variables</li><li>Reading the result of the executed program</li><li>Cleaning up the variables</li></ol><code><pre><span class = "keywords_a">component</span> <span class = "keywords_a">provides</span> dataprocessing.Normalisation <span class = "keywords_a">requires</span> gpu.LogicalCompute, <span class = "keywords_a">data</span>.DecUtil du {
-    LogicalCompute myDev
+   			  <span class = "keywords_b">return</span> 0
+    	}
+	}</code></pre><h1 id = "anchor2">LogicalCompute Interface</h1><p>The second of the abstraction levels is the LogicalCompute (link to interface page) interface. This is an easy way to get up and running transferring data and executing instructions on an external compute device. It gives the user a space to declare, read and write variables along with loading programs that operate on the variables that have been declared. Users of this interface need not be concerned with exactly which external devices are being used, and if more than one is being used the user of the LogicalCompute won't need to decide which physical device to write data to or execute programs on.</p><p>The utility functions discussed above typically use this interface to implement their behavior. The general workflow is as follows:</p><ol><li>Declare a set of variable</li><li>Write some data to the variables</li><li>Load a program</li><li>Run the program on a set of the declared variables</li><li>Reading the result of the executed program</li><li>Cleaning up the variables</li></ol><code><pre><span class = "keywords_a">component</span> <span class = "keywords_a">provides</span> dataprocessing.Normalisation <span class = "keywords_a">requires</span> gpu.LogicalCompute, <span class = "keywords_a">data</span>.DecUtil du {
+	LogicalCompute myDev
 
-    Normalisation:Normalisation() {
-        myDev = <span class = "keywords_b">new</span> LogicalCompute()
-		<span class = "src_comment">/// Loading the program</span>
-        myDev.loadProgram(<span class = "src_string">"./resources-ext/opencl_kernels/dataprocessing/floatDiv.cl"</span>, <span class = "src_string">"floatDiv"</span>)
-    }
+	Normalisation:Normalisation() {
+    	myDev = <span class = "keywords_b">new</span> LogicalCompute()
+   	 <span class = "src_comment">/// Loading the program</span>
+    	myDev.loadProgram(<span class = "src_string">"./resources-ext/opencl_kernels/dataprocessing/floatDiv.cl"</span>, <span class = "src_string">"floatDiv"</span>)
+	}
 
-    <span class = "keywords_b">dec</span>[][] Normalisation:matrixDivision(<span class = "keywords_b">dec</span> matrix[][], <span class = "keywords_b">dec</span> divider) {
-		<span class = "src_comment">/// Declaring the variables needed</span>
-        myDev.createDecMatrix(<span class = "src_string">"mat"</span>, matrix.arrayLength, matrix[0].arrayLength)
-        myDev.createDecMatrix(<span class = "src_string">"out"</span>, matrix.arrayLength, matrix[0].arrayLength)
-        myDev.createDecArray(<span class = "src_string">"divider"</span>, 1)
+	<span class = "keywords_b">dec</span>[][] Normalisation:matrixDivision(<span class = "keywords_b">dec</span> matrix[][], <span class = "keywords_b">dec</span> divider) {
+   	 <span class = "src_comment">/// Declaring the variables needed</span>
+    	myDev.createDecMatrix(<span class = "src_string">"mat"</span>, matrix.arrayLength, matrix[0].arrayLength)
+    	myDev.createDecMatrix(<span class = "src_string">"out"</span>, matrix.arrayLength, matrix[0].arrayLength)
+    	myDev.createDecArray(<span class = "src_string">"divider"</span>, 1)
 
-		<span class = "src_comment">///Writing data to variables that need it</span>
-        myDev.writeDecArray(<span class = "src_string">"divider"</span>, <span class = "keywords_b">new</span> <span class = "keywords_b">dec</span>[](divider))
-				 myDev.writeDecMatrix(<span class = "src_string">"mat"</span>, matrix)
+   	 <span class = "src_comment">///Writing data to variables that need it</span>
+    	myDev.writeDecArray(<span class = "src_string">"divider"</span>, <span class = "keywords_b">new</span> <span class = "keywords_b">dec</span>[](divider))
+   			  myDev.writeDecMatrix(<span class = "src_string">"mat"</span>, matrix)
 
-		<span class = "src_comment">///Collecting together the variables as parameters</span>
-        String params[] = <span class = "keywords_b">new</span> String[](<span class = "keywords_b">new</span> String(<span class = "src_string">"divider"</span>), <span class = "keywords_b">new</span> String(<span class = "src_string">"mat"</span>), <span class = "keywords_b">new</span> String(<span class = "src_string">"out"</span>))
-		<span class = "src_comment">///Running the Program</span>
-        myDev.runProgram(<span class = "src_string">"floatDiv"</span>, params)
+   	 <span class = "src_comment">///Collecting together the variables as parameters</span>
+    	String params[] = <span class = "keywords_b">new</span> String[](<span class = "keywords_b">new</span> String(<span class = "src_string">"divider"</span>), <span class = "keywords_b">new</span> String(<span class = "src_string">"mat"</span>), <span class = "keywords_b">new</span> String(<span class = "src_string">"out"</span>))
+   	 <span class = "src_comment">///Running the Program</span>
+    	myDev.runProgram(<span class = "src_string">"floatDiv"</span>, params)
 
-		<span class = "src_comment">///Reading the result</span>
-        <span class = "keywords_b">dec</span> m[][] = myDev.readDecMatrix(<span class = "src_string">"out"</span>)
+   	 <span class = "src_comment">///Reading the result</span>
+    	<span class = "keywords_b">dec</span> m[][] = myDev.readDecMatrix(<span class = "src_string">"out"</span>)
 
-		<span class = "src_comment">///Cleaning up</span>
-        myDev.destroyMemoryArea(<span class = "src_string">"mat"</span>)
-        myDev.destroyMemoryArea(<span class = "src_string">"out"</span>)
-        myDev.destroyMemoryArea(<span class = "src_string">"divider"</span>)
+   	 <span class = "src_comment">///Cleaning up</span>
+    	myDev.destroyMemoryArea(<span class = "src_string">"mat"</span>)
+    	myDev.destroyMemoryArea(<span class = "src_string">"out"</span>)
+    	myDev.destroyMemoryArea(<span class = "src_string">"divider"</span>)
 
-        <span class = "keywords_b">return</span> m
-    }
+    	<span class = "keywords_b">return</span> m
+	}
 }</code></pre><h2 id = "anchor3">Parameter and Name parity</h2><p>When constructing the parameter array, the parameters need to be in the same order they appear in the loaded program, therefore it's expected that users at this level wrote or are familiar with the programs being loaded. The parameters can be named differently in Dana than in the external program code, however the name of the program in Dana <b> must match exactly </b> the name of the entry point function of the external device program. The program that was loaded in the above example can be seen below:</p><code><pre>__constant sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_NONE | CLK_FILTER_NEAREST;
 
 __kernel <span class = "keywords_b">void</span> floatDiv(__global float* divider, read_only image2d_t matrix, write_only image2d_t matrix_write) {
-    <span class = "keywords_b">int</span> gidx = get_global_id(0);
-    <span class = "keywords_b">int</span> gidy = get_global_id(1);
+	<span class = "keywords_b">int</span> gidx = get_global_id(0);
+	<span class = "keywords_b">int</span> gidy = get_global_id(1);
 
-    float4 fromDevice = read_imagef(matrix, sampler, (int2)(gidx, gidy));
-    float ourNumber = fromDevice[0];
-    float divided = ourNumber / divider[0];
+	float4 fromDevice = read_imagef(matrix, sampler, (int2)(gidx, gidy));
+	float ourNumber = fromDevice[0];
+	float divided = ourNumber / divider[0];
 
-    write_imagef(matrix_write, (int2)(gidx, gidy), (float4)(divided, 0 ,0 ,0));
-}</code></pre><h1 id = "anchor4">Compute Interfaces</h1><p>Lastly is the set of interfaces that make up the Compute component. At this level, the user can select precisly which physical devices they want to use. Cluster them together in a ComputeArray, decided which programs are built for which devices etc. Getting this set up requires a few steps which will typically follow this pattern:</p></div><div class = "docNavColumn"><p><a href = "#anchor0">Dana Compute Package</a></p><p><a href = "#anchor1">Utility Interfaces</a></p><p><a href = "#anchor2">LogicalCompute Interface</a></p><p><a href = "#anchor3">Parameter and Name parity</a></p><p><a href = "#anchor4">Compute Interfaces</a></p></div></html>
+	write_imagef(matrix_write, (int2)(gidx, gidy), (float4)(divided, 0 ,0 ,0));
+}</code></pre><h1 id = "anchor4">Compute Interfaces</h1><p>Lastly is the set of interfaces that make up the Compute component. At this level, the user can select precisely which physical devices they want to use. Cluster them together in a ComputeArray, decide which programs are built for which devices etc. Getting this setup requires a few steps which will typically follow this pattern:</p><ol><li>Get external compute devices available to the system</li><code><pre>***HardwareInfo Interface Required
+<span class = "src_comment">//Query the system for all available compute devices by name</span>
+HardwareInfo info = <span class = "keywords_b">new</span> HardwareInfo()
+String devices[] = info.getDevices()</code></pre></ol><ol><li>Choose the devices you want to pool together, one or more</li><code><pre>String devicesToUse = <span class = "keywords_b">new</span> String[](devices[x].string, devices[y].string)</code></pre></ol><ol><li>Bind these devices together in a ComputeArray</li><code><pre>***ComputeArray Interface Required
+ComputeArray deviceBinder = <span class = "keywords_b">new</span> ComputeArray(devicesToUse)</code></pre></ol><ol><li>At this point, Compute objects can be instantiated which the user can actually use for computation <br> Any Compute instance that is created using an identical ComputeArray and device name will refer to the exact same binding in the underlying native library.</li><code><pre>***Compute Interface Required
+Compute liveDevice = <span class = "keywords_b">new</span> Compute(devicesToUse[x], deviceBinder)</code></pre></ol><ol><li>Allocate memory on a Compute instance. This is done by creating an instance of either ArrayInt, ArrayDec, MatrixInt, MatrixDec. The Compute instance you wish to allocate this memory is passed as a parameter along with the requested size of the memory area you want.</li><code><pre>***MatrixDec, ArrayInt Interface Required
+<span class = "keywords_b">int</span> length = 10
+<span class = "keywords_b">int</span> width = 10
+<span class = "keywords_b">int</span> height = 10
+ArrayInt array = <span class = "keywords_b">new</span> ArrayInt(liveDevice, length)
+MatrixDec mat = <span class = "keywords_b">new</span> MatrixDec(liveDevice, height, width)</code></pre></ol><ol><li>Build a program for a Compute instance by providing the kernel code entry point function name and the kernel source code. For now only .cl kernels are supported.</li><code><pre>***Program Interface Required
+Program p = <span class = "keywords_b">new</span> Program(liveDevice, fname, source)</code></pre></ol><ol><li>Run a program on a Compute instance. To do this, collect together all the ArrayInt, MatrixDec etc instances a Program instance requires as parameters. All ArrayX and MatrixX types are extensions of ExtMemory so can be stored together in a ExtMemroy array.</li><code><pre>*** ExtMemory Interface Required
+ExtMemory params[] = <span class = "keywords_b">new</span> ExtMemory[programParamCount]
+params[0] = mat
+params[1] = array
+
+p.setParameters(params)
+
+liveDevice.runProgram(p)</code></pre></ol><ol><li>Read result of program execution. All extensions of the ExtMemory type have read() and write() functions, one of the parameters of the Program that has just been executed on a Compute instance will been were the output of the program was stored (usually the last parameter). Use that ExtMemory instance's read function to get the result of the computation back into Dana.</li><code><pre><span class = "keywords_b">int</span> computeOutput = array.read()</code></pre></ol><h1 id = "anchor5">External Dependencies</h1><p>Typically to run OpenCL applications there are 3 requirements, The first are the OpenCL C headers which are needed at compile time. This package is pre-compiled so the headers are not a requirement for this package. The other two are usually shared objects that are linked at runtime. These shared objects are an ICD loader, which is used to find and load the other shared object which is an implementation of the OpenCL standard (usually created by a hardware vendor). For the ICD loader we use a statically linked version when compiling this package so the user should not need to install one. This leaves the OpenCL implementation. With many hardware vendors creating their own, often with it being closed source and only publishing the shared object file, we are unable to practically obtain statically linked versions. This means to run this package the user must obtain themselves a OpenCL implementation, attempts to run this package without one will result in an Exception being thrown in Dana.</p></div><div class = "docNavColumn"><p><a href = "#anchor0">Dana Compute Package</a></p><p><a href = "#anchor1">Apps Interfaces</a></p><p><a href = "#anchor2">LogicalCompute Interface</a></p><p><a href = "#anchor3">Parameter and Name parity</a></p><p><a href = "#anchor4">Compute Interfaces</a></p><p><a href = "#anchor5">External Dependencies</a></p></div></html>

@@ -119,16 +119,16 @@ else
 endif
 
 opencl:
-	dnc ./gpu/Compute.dn
-	dnc ./gpu/Compute.dn -gni
+	dnc ./compute/Compute.dn
+	dnc ./compute/Compute.dn -gni
 	$(CP_CMD) ./OpenCLLib_dni.c ./resources-ext/
 	rm ./OpenCLLib_dni.c
-	dnc ./gpu/LogicalCompute.dn
-	dnc ./dataprocessing/TypeConversion.dn
-	dnc ./dataprocessing/Normalisation.dn
-	dnc ./dataprocessing/Resizing.dn
-	dnc ./linear/LinearOperations.dn
-	dnc ./random/RNG.dn
+	dnc ./compute/LogicalCompute.dn
+	dnc ./apps/TypeConversion.dn
+	dnc ./apps/Normalisation.dn
+	dnc ./apps/Resizing.dn
+	dnc ./apps/LinearOperations.dn
+	dnc ./apps/RNG.dn
 	$(CC) -g -s ./resources-ext/OpenCLLib_dni.c $(API_PATH)/vmi_util.c ./resources-ext/OpenCLLib.c -o OpenCLLib[$(PLATFORM).$(CHIP)].dnl -lOpenCL $(STD_INCLUDE) $(CCFLAGS)
 	$(CP_CMD) OpenCLLib[$(PLATFORM).$(CHIP)].dnl "./resources-ext/"
 	rm OpenCLLib[$(PLATFORM).$(CHIP)].dnl

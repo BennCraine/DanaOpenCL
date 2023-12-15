@@ -1,4 +1,4 @@
-component provides random.RNG requires gpu.LogicalCompute {
+component provides RNG requires compute.LogicalCompute {
     LogicalCompute myDev
     int mySeed
 

@@ -1,4 +1,4 @@
-component provides linear.LinearOperations requires gpu.LogicalCompute, data.DecUtil du, data.IntUtil iu {
+component provides LinearOperations requires compute.LogicalCompute, data.DecUtil du, data.IntUtil iu {
 
     LogicalCompute myDev
 

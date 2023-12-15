@@ -1,4 +1,4 @@
-component provides dataprocessing.Normalisation requires gpu.LogicalCompute, data.DecUtil du{
+component provides Normalisation requires compute.LogicalCompute, data.DecUtil du{
     LogicalCompute myDev
 
     Normalisation:Normalisation() {

@@ -1,4 +1,4 @@
-component provides dataprocessing.TypeConversion requires gpu.LogicalCompute {
+component provides TypeConversion requires compute.LogicalCompute {
     LogicalCompute myDev
 
     TypeConversion:TypeConversion() {

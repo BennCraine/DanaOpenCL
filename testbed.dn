@@ -1,15 +1,15 @@
-component provides App requires linear.LinearOperations, 
-                                dataprocessing.Resizing, 
-                                dataprocessing.Normalisation, 
-                                dataprocessing.TypeConversion, 
-                                random.RNG, 
+component provides App requires apps.LinearOperations, 
+                                apps.Resizing, 
+                                apps.Normalisation, 
+                                apps.TypeConversion, 
+                                apps.RNG, 
                                 data.adt.List, 
                                 io.Output out, 
                                 data.IntUtil iu, 
                                 data.DecUtil du,
                                 time.Calendar cal,
                                 time.TimeUnix tu,
-                                gpu.LogicalComputeDevice,
+                                compute.LogicalCompute,
                                 stats.Matrix mat
                                 {
     int App:main(AppParam params[]) {

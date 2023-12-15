@@ -4,7 +4,7 @@
 interface ExtMemory {
     /* {"@description" : "This function is called by internally by the GPU Compute framework; it has no public utility." } */
     int getMemoryLoc()
-    /* {"@description" : "Returns the lengths of each dimention the block of memory has"} */
+    /* {"@description" : "Returns the lengths of each dimension the block of memory has"} */
     int[] getDimensionLengths()
     
 }
