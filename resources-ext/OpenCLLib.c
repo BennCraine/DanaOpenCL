@@ -551,6 +551,7 @@ INSTRUCTION_DEF writeIntArray(FrameData* cframe) {
         return RETURN_OK;
     }
     api->returnInt(cframe, (size_t) 0);
+    free(rawHostArray);
     return RETURN_OK;    
 }
 
@@ -563,6 +564,7 @@ INSTRUCTION_DEF readIntArray(FrameData* cframe) {
     size_t hostArrayLen = api->getParamInt(cframe, 2);
 
     size_t* rawHostArray = (size_t*) malloc(sizeof(size_t)*hostArrayLen);
+    size_t* toFree = rawHostArray;
 
     cl_int CL_err = clEnqueueReadBuffer(queue, memObj, CL_TRUE, 0, hostArrayLen*sizeof(size_t), rawHostArray, NULL, NULL, NULL);
     if (CL_err != CL_SUCCESS) {
@@ -578,6 +580,7 @@ INSTRUCTION_DEF readIntArray(FrameData* cframe) {
     }
 
     api->returnEl(cframe, hostArray);
+    (toFree);
 
     return RETURN_OK;    
 }
@@ -605,6 +608,7 @@ INSTRUCTION_DEF writeFloatArray(FrameData* cframe) {
         return RETURN_OK;
     }
     api->returnInt(cframe, (size_t) 0);
+    free(rawHostArray);
     return RETURN_OK;    
 }
 
@@ -617,6 +621,7 @@ INSTRUCTION_DEF readFloatArray(FrameData* cframe) {
     size_t hostArrayLen = api->getParamInt(cframe, 2);
 
     float* fromDevice = (float*) malloc(sizeof(float)*hostArrayLen);
+    float* toFree = fromDevice;
 
     cl_int CL_err = clEnqueueReadBuffer(queue, memObj, CL_TRUE, 0, hostArrayLen*sizeof(float), fromDevice, NULL, NULL, NULL);
     if (CL_err != CL_SUCCESS) {
@@ -633,6 +638,7 @@ INSTRUCTION_DEF readFloatArray(FrameData* cframe) {
     }
 
     api->returnEl(cframe, danaArr);
+    free(toFree);
 
     return RETURN_OK;    
 }
@@ -712,6 +718,7 @@ INSTRUCTION_DEF writeIntMatrix(FrameData* cframe) {
     else {
     }
     api->returnInt(cframe, (size_t) 0);
+    free(rawHostMatrix);
     return RETURN_OK;    
 }
 
@@ -726,6 +733,7 @@ INSTRUCTION_DEF readIntMatrix(FrameData* cframe) {
     size_t hostMatrixLens[] = {api->getArrayCellInt(matrixDims, 0), api->getArrayCellInt(matrixDims, 1)};
 
     uint32_t* rawHostMatrix = (uint32_t*) malloc(sizeof(uint32_t)*hostMatrixLens[0]*hostMatrixLens[1]);
+    uint32_t* toFree = rawHostMatrix;
 
     size_t origin[] = {0, 0, 0};
     size_t region[] = {hostMatrixLens[1], hostMatrixLens[0], 1};
@@ -747,6 +755,7 @@ INSTRUCTION_DEF readIntMatrix(FrameData* cframe) {
     }
 
     api->returnEl(cframe, hostMatrix);
+    free(toFree);
 
     return RETURN_OK;    
 }
@@ -780,6 +789,7 @@ INSTRUCTION_DEF writeFloatMatrix(FrameData* cframe) {
         return RETURN_OK;
     }
     api->returnInt(cframe, (size_t) 0);
+    free(rawHostMatrix);
     return RETURN_OK;    
 }
 
@@ -794,6 +804,7 @@ INSTRUCTION_DEF readFloatMatrix(FrameData* cframe) {
     size_t hostMatrixLens[] = {api->getArrayCellInt(matrixDims, 0), api->getArrayCellInt(matrixDims, 1)};
 
     float* rawHostMatrix = (float*) malloc(sizeof(float)*hostMatrixLens[0]*hostMatrixLens[1]);
+    float* toFree = rawHostMatrix;
 
     size_t origin[] = {0, 0, 0};
     size_t region[] = {hostMatrixLens[1], hostMatrixLens[0], 1};
@@ -814,7 +825,7 @@ INSTRUCTION_DEF readFloatMatrix(FrameData* cframe) {
     }
 
     api->returnEl(cframe, hostMatrix);
-
+    free(toFree);
     return RETURN_OK;    
 }
 
@@ -897,6 +908,7 @@ INSTRUCTION_DEF createProgram(FrameData* cframe) {
     }
 
     api->returnInt(cframe, (size_t) prog);
+    free(programStrings);
 
     return RETURN_OK;
 }
@@ -955,6 +967,7 @@ INSTRUCTION_DEF prepareKernel(FrameData* cframe) {
     CL_err = clSetKernelArg(kernel, paramCount, sizeof(size_t), &paramCount);
 
     api->returnInt(cframe, (size_t) kernel);
+    free(rawParamArray);
 
     return RETURN_OK;
 
@@ -995,6 +1008,7 @@ INSTRUCTION_DEF runKernel(FrameData* cframe) {
 
     //clean up
     clReleaseEvent(*kernel_event);
+    free(kernel_event);
     free(globalWorkers);
     clRetainKernel(kernel);
 
