@@ -75,6 +75,23 @@ typedef struct _one_per_dana_comp {
     CONTEXT_LI* contexts;
 } DANA_COMP;
 
+void destoryContexts(DANA_COMP* contextSpace) {
+    if (contextSpace == NULL || contextSpace->contexts == NULL) {
+        return;
+    }
+
+    CONTEXT_LI* probe = contextSpace->contexts;
+    for (probe; probe->next != NULL; probe = probe->next) {
+        clReleaseContext(probe->context);
+        free(devices);
+    }
+    clReleaseContext(probe->context);
+    free(devices);
+
+    free(contextSpace);
+    return;
+}
+
 void addNewContext(DANA_COMP* danaComp, CONTEXT_LI* newContext) {
     if (danaComp->contexts == NULL) {
         danaComp->contexts = newContext;
@@ -810,6 +827,29 @@ INSTRUCTION_DEF destroyMemoryArea(FrameData* cframe) {
     return RETURN_OK;
 }
 
+INSTRUCTION_DEF destroyContextSpace(FrameData* cframe) {
+    size_t rawParam = api->getParamInt(cframe, 0);
+    DANA_COMP* comp = (DANA_COMP*) rawParam;
+    destoryContexts(comp);
+    return RETURN_OK;
+}
+
+INSTRUCTION_DEF destroyQueue(FrameData* cframe) {
+    cl_int CL_err = CL_SUCCESS;
+    size_t rawParam = api->getParamInt(cframe, 0);
+    cl_command_queue queue = (cl_command_queue) rawParam;
+    CL_err = clReleaseCommandQueue(queue);
+    return RETURN_OK;
+}
+
+INSTRUCTION_DEF destroyProgram(FrameData* cframe) {
+    cl_int CL_err = CL_SUCCESS;
+    size_t rawParam = api->getParamInt(cframe, 0);
+    cl_program prog = (cl_program) rawParam;
+    CL_err = clReleaseProgram(prog);
+    return RETURN_OK;
+}
+
 /*
     * Input: .cl program source code
     * For each platform/context attached to a DANA_COMP attempt to build the program
@@ -950,6 +990,7 @@ INSTRUCTION_DEF runKernel(FrameData* cframe) {
     //clean up
     clReleaseEvent(*kernel_event);
     free(globalWorkers);
+    clRetainKernel(kernel);
 
     api->returnInt(cframe, (size_t) 0);
     return RETURN_OK;
@@ -997,6 +1038,9 @@ Interface* load(CoreAPI* capi) {
     setInterfaceFunction("runKernel", runKernel);
     setInterfaceFunction("createContextSpace", createContextSpace);
     setInterfaceFunction("printLogs", printLogs);
+    setInterfaceFunction("destroyContextSpace", destroyContextSpace);
+    setInterfaceFunction("destroyProgram", destroyProgram);
+    setInterfaceFunction("destroyQueue", destroyQueue);
 
     charArrayGT = api->resolveGlobalTypeMapping(getTypeDefinition("char[]"));
     stringArrayGT = api->resolveGlobalTypeMapping(getTypeDefinition("String[]"));

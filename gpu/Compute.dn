@@ -23,6 +23,9 @@ interface OpenCLLib {
     dec[][] readFloatMatrix(int queue_cl, int memObj_cl, int lens[])
     int prepareKernel(int clProghandle, int paramHandles[], int paramCount, char program[])
     int runKernel(int clKernel, int queue_cl, int outputDims[])
+    void destroyContextSpace(int contextSpaceHandle)
+    void destroyQueue(int queueHandle)
+    void destroyProgram(int programHandle)
     void printLogs()
 }
 
@@ -92,7 +95,7 @@ component provides ComputeArray(Destructor), ComputeInfo, Compute(Destructor), P
         }
         
         void Destructor:destroy(){
-            //lib.destroyContextSpace(handle)
+            lib.destroyContextSpace(handle)
         }
     }
     
@@ -167,8 +170,8 @@ component provides ComputeArray(Destructor), ComputeInfo, Compute(Destructor), P
         
         void Destructor:destroy()
             {
-            //destroy context?
             //destroy queue?
+            lib.destroyQueue(queueHandle)
             }
     }
 
@@ -259,6 +262,7 @@ component provides ComputeArray(Destructor), ComputeInfo, Compute(Destructor), P
         void Destructor:destroy()
             {
             //destroy phandle?
+            lib.destroyProgram(phandle)
             }
     }
 

@@ -156,6 +156,12 @@ static const DanaTypeField function_OpenCLLib_runKernel_fields[] = {
 {(DanaType*) &int_def, NULL, 0, 0, 0},{(DanaType*) &int_def, NULL, 0, 0, 8},
 {(DanaType*) &int_def, NULL, 0, 0, 16},
 {(DanaType*) &int_array_def, NULL, 0, 0, 24}};
+static const DanaTypeField function_OpenCLLib_destroyContextSpace_fields[] = {
+{(DanaType*) &void_def, NULL, 0, 0, 0},{(DanaType*) &int_def, NULL, 0, 0, 0}};
+static const DanaTypeField function_OpenCLLib_destroyQueue_fields[] = {
+{(DanaType*) &void_def, NULL, 0, 0, 0},{(DanaType*) &int_def, NULL, 0, 0, 0}};
+static const DanaTypeField function_OpenCLLib_destroyProgram_fields[] = {
+{(DanaType*) &void_def, NULL, 0, 0, 0},{(DanaType*) &int_def, NULL, 0, 0, 0}};
 static const DanaTypeField function_OpenCLLib_printLogs_fields[] = {
 {(DanaType*) &void_def, NULL, 0, 0, 0}};
 static const DanaType object_OpenCLLib_functions_spec[] = {
@@ -185,6 +191,9 @@ static const DanaType object_OpenCLLib_functions_spec[] = {
 {TYPE_FUNCTION, 0, 48, (DanaTypeField*) &function_OpenCLLib_readFloatMatrix_fields, 4},
 {TYPE_FUNCTION, 0, 56, (DanaTypeField*) &function_OpenCLLib_prepareKernel_fields, 5},
 {TYPE_FUNCTION, 0, 40, (DanaTypeField*) &function_OpenCLLib_runKernel_fields, 4},
+{TYPE_FUNCTION, 0, 8, (DanaTypeField*) &function_OpenCLLib_destroyContextSpace_fields, 2},
+{TYPE_FUNCTION, 0, 8, (DanaTypeField*) &function_OpenCLLib_destroyQueue_fields, 2},
+{TYPE_FUNCTION, 0, 8, (DanaTypeField*) &function_OpenCLLib_destroyProgram_fields, 2},
 {TYPE_FUNCTION, 0, 0, (DanaTypeField*) &function_OpenCLLib_printLogs_fields, 1}};
 static const DanaTypeField intf_functions_def[] = {
 {(DanaType*) &object_OpenCLLib_functions_spec[0], "clone", 5},
@@ -213,11 +222,14 @@ static const DanaTypeField intf_functions_def[] = {
 {(DanaType*) &object_OpenCLLib_functions_spec[23], "readFloatMatrix", 15},
 {(DanaType*) &object_OpenCLLib_functions_spec[24], "prepareKernel", 13},
 {(DanaType*) &object_OpenCLLib_functions_spec[25], "runKernel", 9},
-{(DanaType*) &object_OpenCLLib_functions_spec[26], "printLogs", 9}};
+{(DanaType*) &object_OpenCLLib_functions_spec[26], "destroyContextSpace", 19},
+{(DanaType*) &object_OpenCLLib_functions_spec[27], "destroyQueue", 12},
+{(DanaType*) &object_OpenCLLib_functions_spec[28], "destroyProgram", 14},
+{(DanaType*) &object_OpenCLLib_functions_spec[29], "printLogs", 9}};
 static const DanaTypeField intf_events_def[] = {
 };
 static const DanaType OpenCLLib_object_spec[] = {
-{TYPE_DATA, 0, 0, (DanaTypeField*) intf_functions_def, 27},
+{TYPE_DATA, 0, 0, (DanaTypeField*) intf_functions_def, 30},
 {TYPE_DATA, 0, 0, (DanaTypeField*) intf_events_def, 0},
 {TYPE_DATA, 0, 0, NULL, 0}
 };
@@ -252,6 +264,9 @@ static unsigned char op_writeFloatMatrix_thread_spec[sizeof(VFrameHeader)+sizeof
 static unsigned char op_readFloatMatrix_thread_spec[sizeof(VFrameHeader)+sizeof(VFrame)];
 static unsigned char op_prepareKernel_thread_spec[sizeof(VFrameHeader)+sizeof(VFrame)];
 static unsigned char op_runKernel_thread_spec[sizeof(VFrameHeader)+sizeof(VFrame)];
+static unsigned char op_destroyContextSpace_thread_spec[sizeof(VFrameHeader)+sizeof(VFrame)];
+static unsigned char op_destroyQueue_thread_spec[sizeof(VFrameHeader)+sizeof(VFrame)];
+static unsigned char op_destroyProgram_thread_spec[sizeof(VFrameHeader)+sizeof(VFrame)];
 static unsigned char op_printLogs_thread_spec[sizeof(VFrameHeader)+sizeof(VFrame)];
 static SourceHeader header;
 static DanaComponent self;
@@ -282,6 +297,9 @@ static size_t interfaceFunctions[] = {
 (size_t) op_readFloatMatrix_thread_spec,
 (size_t) op_prepareKernel_thread_spec,
 (size_t) op_runKernel_thread_spec,
+(size_t) op_destroyContextSpace_thread_spec,
+(size_t) op_destroyQueue_thread_spec,
+(size_t) op_destroyProgram_thread_spec,
 (size_t) op_printLogs_thread_spec};
 static DanaType libType = {TYPE_OBJECT, 0, 0, (DanaTypeField*) intf_def, 3};
 static InterfaceDetails ids[] = {{"OpenCLLib", 9, &libType}};
@@ -418,10 +436,25 @@ Interface* getPublicInterface(){
 ((VFrameHeader*) op_runKernel_thread_spec) -> sub = NULL;
 ((VFrameHeader*) op_runKernel_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[25];
 ((VFrameHeader*) op_runKernel_thread_spec) -> functionName = "runKernel";
+((VFrameHeader*) op_destroyContextSpace_thread_spec) -> frameSize = sizeof(VFrame) + sizeof(VVarR) + 8;
+((VFrameHeader*) op_destroyContextSpace_thread_spec) -> formalParamsCount = 1;
+((VFrameHeader*) op_destroyContextSpace_thread_spec) -> sub = NULL;
+((VFrameHeader*) op_destroyContextSpace_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[26];
+((VFrameHeader*) op_destroyContextSpace_thread_spec) -> functionName = "destroyContextSpace";
+((VFrameHeader*) op_destroyQueue_thread_spec) -> frameSize = sizeof(VFrame) + sizeof(VVarR) + 8;
+((VFrameHeader*) op_destroyQueue_thread_spec) -> formalParamsCount = 1;
+((VFrameHeader*) op_destroyQueue_thread_spec) -> sub = NULL;
+((VFrameHeader*) op_destroyQueue_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[27];
+((VFrameHeader*) op_destroyQueue_thread_spec) -> functionName = "destroyQueue";
+((VFrameHeader*) op_destroyProgram_thread_spec) -> frameSize = sizeof(VFrame) + sizeof(VVarR) + 8;
+((VFrameHeader*) op_destroyProgram_thread_spec) -> formalParamsCount = 1;
+((VFrameHeader*) op_destroyProgram_thread_spec) -> sub = NULL;
+((VFrameHeader*) op_destroyProgram_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[28];
+((VFrameHeader*) op_destroyProgram_thread_spec) -> functionName = "destroyProgram";
 ((VFrameHeader*) op_printLogs_thread_spec) -> frameSize = sizeof(VFrame) + sizeof(VVarR) + 0;
 ((VFrameHeader*) op_printLogs_thread_spec) -> formalParamsCount = 0;
 ((VFrameHeader*) op_printLogs_thread_spec) -> sub = NULL;
-((VFrameHeader*) op_printLogs_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[26];
+((VFrameHeader*) op_printLogs_thread_spec) -> localsDef = (size_t) &object_OpenCLLib_functions_spec[29];
 ((VFrameHeader*) op_printLogs_thread_spec) -> functionName = "printLogs";
 memset(&self, '\0', sizeof(self));
 self.objects = objects; self.header = &header; self.header -> objectsCount = sizeof(objects) / sizeof(ObjectSpec);
@@ -461,6 +494,9 @@ static Fable interfaceMappings[] = {
 {"readFloatMatrix", (VFrameHeader*) op_readFloatMatrix_thread_spec},
 {"prepareKernel", (VFrameHeader*) op_prepareKernel_thread_spec},
 {"runKernel", (VFrameHeader*) op_runKernel_thread_spec},
+{"destroyContextSpace", (VFrameHeader*) op_destroyContextSpace_thread_spec},
+{"destroyQueue", (VFrameHeader*) op_destroyQueue_thread_spec},
+{"destroyProgram", (VFrameHeader*) op_destroyProgram_thread_spec},
 {"printLogs", (VFrameHeader*) op_printLogs_thread_spec}};
 void setInterfaceFunction(char *name, void *ptr){
 int i = 0;
