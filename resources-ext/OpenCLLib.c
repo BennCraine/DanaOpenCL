@@ -75,7 +75,7 @@ typedef struct _one_per_dana_comp {
     CONTEXT_LI* contexts;
 } DANA_COMP;
 
-void destoryContexts(DANA_COMP* contextSpace) {
+void destroyContexts(DANA_COMP* contextSpace) {
     if (contextSpace == NULL || contextSpace->contexts == NULL) {
         return;
     }
@@ -83,10 +83,14 @@ void destoryContexts(DANA_COMP* contextSpace) {
     CONTEXT_LI* probe = contextSpace->contexts;
     for (probe; probe->next != NULL; probe = probe->next) {
         clReleaseContext(probe->context);
-        free(devices);
+        for (int i = 0; i < probe->numOfDevices; i++) {
+            clReleaseDevice(*(probe->devices+i));
+        }
     }
     clReleaseContext(probe->context);
-    free(devices);
+    for (int i = 0; i < probe->numOfDevices; i++) {
+        clReleaseDevice(*(probe->devices+i));
+    }
 
     free(contextSpace);
     return;
@@ -358,6 +362,8 @@ INSTRUCTION_DEF getComputeDevices(VFrame* cframe) {
         api->setDataFieldEl(string, 0, charArr);
 
         api->setArrayCellEl(returnArray, i, string);
+
+        free(deviceNames[i]);
     }
 
     //return
@@ -830,7 +836,7 @@ INSTRUCTION_DEF destroyMemoryArea(FrameData* cframe) {
 INSTRUCTION_DEF destroyContextSpace(FrameData* cframe) {
     size_t rawParam = api->getParamInt(cframe, 0);
     DANA_COMP* comp = (DANA_COMP*) rawParam;
-    destoryContexts(comp);
+    destroyContexts(comp);
     return RETURN_OK;
 }
 
