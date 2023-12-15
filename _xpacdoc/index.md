@@ -4,14 +4,14 @@ The Dana Compute package allows you to interact with compute devices on your sys
 
 There are three main levels of abstraction in this package to interact with compute devices. Depending on your inteded application one may be better than the others.
 
-# Utility Interfaces
+# Apps Interfaces
 
-The first of these is the easiest way to interact with external compute devices on your system. These are a set of utility functions commonly associated with using hardware accelleration to process large datasets. For example the RNG package can be used to generate large amounts of psudo-random numbers in paralell, and the LinearOperations interface impliments tasks such as matrix multiplication on an external compute device to leverage high levels of paralellisation.
+The first of these is the easiest way to interact with external compute devices on your system. These are a set of apps whos functions are commonly associated with using hardware accelleration to process large datasets. For example the RNG app can be used to generate large amounts of psudo-random numbers in paralell, and the LinearOperations app impliments tasks such as matrix multiplication on an external compute device to leverage high levels of paralellisation.
 
-Accessing these utilities is done in the usual Dana way of requiring them in any component you're building and calling their functions:
+Accessing these apps interfaces is done in the usual Dana way of requiring them in any component you're building and calling their functions:
 
 ```
-component provides App requires compute.alg.LinearOperations {
+component provides App requires compute.apps.LinearOperations {
 
     int App:main(AppParam params[])
         {
@@ -100,3 +100,65 @@ __kernel void floatDiv(__global float* divider, read_only image2d_t matrix, writ
 
 # Compute Interfaces
 Lastly is the set of interfaces that make up the Compute component. At this level, the user can select precisly which physical devices they want to use. Cluster them together in a ComputeArray, decided which programs are built for which devices etc. Getting this set up requires a few steps which will typically follow this pattern:
+
+1. Get external compute devices available to the system
+```
+***HardwareInfo Interface Required
+//Query the system for all available compute devices by name
+HardwareInfo info = new HardwareInfo()
+String devices[] = info.getDevices()
+```
+
+2. Choose the devices you want to pool together, one or more
+```
+String devicesToUse = new String[](devices[x].string, devices[y].string)
+```
+
+3. Bind these devices together in a ComputeArray
+```
+***ComputeArray Interface Required
+ComputeArray deviceBinder = new ComputeArray(devicesToUse)
+```
+
+4. At this point, Compute objects can be instantiated which the user can actually use for computation <br> Any Compute instance that is created using an identical ComputeArray and device name will refer to the exact same binding in the underlying native library.
+```
+***Compute Interface Required
+Compute liveDevice = new Compute(devicesToUse[x], deviceBinder)
+```
+
+5. Allocate memory on a Compute instance. This is done by creating an instance of either ArrayInt, ArrayDec, MatrixInt, MatrixDec. The Compute instance you wish to allocate this memory is passed as a parameter along with the requested size of the memory area you want.
+```
+***MatrixDec, ArrayInt Interface Required
+int length = 10
+int width = 10
+int height = 10
+ArrayInt array = new ArrayInt(liveDevice, length)
+MatrixDec mat = new MatrixDec(liveDevice, height, width)
+```
+
+6. Build a program for a Compute instance by providing the kernel code entry point function name and the kernel source code. For now only .cl kernels are supported.
+```
+***Program Interface Required
+Program p = new Program(liveDevice, fname, source)
+```
+
+7. Run a program on a Compute instance. To do this, collect together all the ArrayInt, MatrixDec etc instances a Program instance reqires as parameters. All ArrayX and MatrixX types are extensions of ExtMemory so can be stored together in a ExtMemroy array.
+```
+*** ExtMemory Interface Required
+ExtMemory params[] = new ExtMemory[programParamCount]
+params[0] = mat
+params[1] = array
+
+p.setParameters(params)
+
+liveDevice.runProgram(p)
+```
+
+8. Read result of program execution. All extensions of the ExtMemory type have read() and write() functions, one of the parameters of the Program that has just been executed on a Compute instance will been were the output of the program was stored (usually the last parameter). Use that ExtMemory instance's read function to get the result of the computation back into Dana.
+```
+int computeOutput = array.read()
+```
+
+# External Dependancies
+Typically to run OpenCL applications there are 3 requirments, The first are the OpenCL C headers which are needed at compile time. This package is pre-compiled so the headers are not a requirment for this package. The other two are usually shared objects that are linked at runtime. These shared objects are an ICD loader, which is used to find and load the the other shared object which is an implimentation of the OpenCL standard (usually created by a hardware vendor). For the ICD loader we use a statically linked version when compiling this package so the user should not need to install one. This leaves the OpenCL implimentation. With many hardware vendors creating their own, often with it being closed source and only publishing the shared object file, we are unable to practically obtain statitcally linked versions. This means to run this package the user must obtain themselves a OpenCL implementation, attempts to run this package without one will result in a Exception being thrown in Dana.
+
