@@ -431,8 +431,9 @@ INSTRUCTION_DEF createAsynchQueue(FrameData* cframe) {
     CONTEXT_LI* contextItem = getContextByDevice(danaComp, device);
     cl_context context = contextItem->context;
 
-    const cl_queue_properties props[] = {CL_QUEUE_PROPERTIES, 0};
-    cl_command_queue newQ = clCreateCommandQueueWithProperties(context, device, NULL, &CL_err);
+    const cl_queue_properties props = {CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, 0};
+
+    cl_command_queue newQ = clCreateCommandQueue(context, device, props, &CL_err);
     if(CL_err != CL_SUCCESS) {
         addLog(newLogItem("clCreateCommandQueueWithProperties", CL_err));
         api->returnInt(cframe, (size_t) 0);
@@ -453,8 +454,7 @@ INSTRUCTION_DEF createSynchQueue(FrameData* cframe) {
     CONTEXT_LI* contextItem = getContextByDevice(danaComp, device);
     cl_context context = contextItem->context;
 
-    const cl_queue_properties props[] = {CL_QUEUE_PROPERTIES, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, 0};
-    cl_command_queue newQ = clCreateCommandQueueWithProperties(context, device, props, &CL_err);
+    cl_command_queue newQ = clCreateCommandQueue(context, device, NULL, &CL_err);
     if(CL_err != CL_SUCCESS) {
         addLog(newLogItem("clCreateCommandQueueWithProperties", CL_err));
         api->returnInt(cframe, (size_t) 0);
